@@ -83,5 +83,5 @@ $('#nn').onclick=async()=>{const{error}=await sb.from('campaigns').insert({title
 const routes={home,campaigns,c:camp,auth,dash,submit,admin};
 async function route(){const h=location.hash.slice(2).split('/');app.innerHTML='<p class="mut">Loading…</p>';scrollTo(0,0);try{await(routes[h[0]||'home']||home)(h[1])}catch(e){app.innerHTML='<p class="err">'+esc(e.message)+'</p>'}}
 async function load(){const{data}=await sb.auth.getSession();me=data.session?data.session.user:null;prof=null;if(me){const r=await sb.from('profiles').select('*').eq('id',me.id).single();prof=r.data}nav()}
-sb.auth.onAuthStateChange(async()=>{await load();route()});addEventListener('hashchange',route);load().then(route);
+sb.auth.onAuthStateChange(async()=>{await load();route()});addEventListener('hashchange',route);load().then(route);const _auth=auth;routes.auth=function(){_auth();const x=document.createElement('button');x.className='btn';x.style.cssText='width:100%;margin-top:10px';x.textContent='Continue with X';x.onclick=async()=>{const{error}=await sb.auth.signInWithOAuth({provider:'x',options:{redirectTo:location.origin+location.pathname}});if(error)say(error.message)};$('#go').after(x)};
 </script></body></html>
