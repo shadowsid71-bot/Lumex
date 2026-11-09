@@ -185,6 +185,7 @@ async function loadSocial(){if(!requireAuth())return;let {data,error}=await sb.f
 
 $("#saveSocial").onclick=async()=>{
 if(!requireAuth())return;
+
 let row={
 user_id:currentUser.id,
 platform:$("#socialPlatform").value,
@@ -192,12 +193,48 @@ username:$("#socialUsername").value.trim(),
 profile_url:$("#socialUrl").value.trim(),
 status:"pending"
 };
+
 if(!row.username||!row.profile_url){
 toast("Enter your username and profile URL.");
 return;
 }
+
+let parsedUrl;
+
+try {
+parsedUrl=new URL(row.profile_url);
+} catch(e) {
+toast("Enter a valid profile URL.");
+return;
+}
+
+if(parsedUrl.protocol!=="https:"){
+toast("Profile URL must start with https://.");
+return;
+}
+
+const allowedHosts={
+TikTok:["tiktok.com","www.tiktok.com","m.tiktok.com"],
+X:["x.com","www.x.com","twitter.com","www.twitter.com"],
+Instagram:["instagram.com","www.instagram.com"],
+YouTube:["youtube.com","www.youtube.com","m.youtube.com"]
+};
+
+if(!allowedHosts[row.platform]?.includes(parsedUrl.hostname.toLowerCase())){
+toast("Your profile link does not match the selected platform.");
+return;
+}
+
 let {error}=await sb.from("social_accounts").insert(row);
-toast(error?.message||"Account submitted for review.");
+
+if(error){
+toast(error.message);
+return;
+}
+
+toast("Account submitted for review.");
+$("#socialUsername").value="";
+$("#socialUrl").value="";
 loadSocial();
 };
 
