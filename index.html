@@ -99,7 +99,7 @@ body{overflow-x:hidden}body:after{content:"";position:fixed;inset:0;pointer-even
     <button data-page="support"><span class="nav-icon">☏</span>Support requests</button>
   </nav>
   <div class="nav-label" style="margin-top:18px">ACCOUNT</div>
-  <nav class="nav"><button data-page="profile"><span class="nav-icon">◉</span>My profile</button><button data-page="admin" id="adminNav" class="hidden"><span class="nav-icon">⚙</span>Admin panel</button></nav>
+  <nav class="nav"><button data-page="profile"><span class="nav-icon">◉</span>My profile</button><button data-page="admin" id="adminNav" class="hidden"><span class="nav-icon">⚙</span>Admin panel <span id="adminSupportNavBadge" style="display:none;margin-left:auto;background:#ff7474;color:#160707;border-radius:20px;padding:2px 7px;font-size:10px;font-weight:900">0</span></button></nav>
   <div class="side-bottom"><div class="profile-mini"><div class="avatar" id="sideAvatar">G</div><div><b id="sideName">Guest creator</b><small id="sideEmail">Sign in to continue</small></div></div></div>
 </aside>
 <main class="main">
@@ -151,7 +151,7 @@ const SUPABASE_KEY = "sb_publishable_mC_LV7HxprKRqV2DO7Uj8A_dnyHIAV6";
 const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-let currentUser = null, currentProfile = null, campaignsCache = [], submissionsCache = [];
+let currentUser = null, currentProfile = null, campaignsCache = [], submissionsCache = [], adminSupportChannel = null;
 const money = n => "$" + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const safe = v => String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const toast = msg => {let el=document.createElement("div");el.className="toast";el.textContent=msg;document.body.append(el);setTimeout(()=>el.remove(),3600)};
@@ -255,7 +255,7 @@ $("#leaderRows").innerHTML=error
 async function loadRequests(){
   if(!requireAuth())return;
 
-  let {data,error}=await sb.from("user_requests")
+  const {data,error}=await sb.from("user_requests")
     .select("*")
     .eq("user_id",currentUser.id)
     .order("created_at",{ascending:false});
@@ -280,15 +280,112 @@ async function loadRequests(){
               <b>Support response</b>
               <p style="white-space:pre-wrap">${safe(r.admin_reply)}</p>
             </div>
-          ` : `
-            <p class="muted">Awaiting support response.</p>
-          `}
+          ` : '<p class="muted">Awaiting support response.</p>'}
+
+          ${r.status==="open"&&!r.admin_reply ? `
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+              ${!r.creator_edit_used ? `
+                <button class="btn small" onclick="editSupportRequest('${safe(r.id)}')">Edit Once</button>
+              ` : '<span class="muted">Your one edit has been used.</span>'}
+
+              <button class="btn small danger" onclick="deleteSupportRequest('${safe(r.id)}')">Delete Request</button>
+            </div>
+          ` : ''}
         </div>
       </details>
     `).join("")
     :emptyHTML("No requests","Your support requests will appear here.");
+}
+
+window.editSupportRequest=async function(id){
+  if(!requireAuth())return;
+
+  const {data:r,error}=await sb.from("user_requests")
+    .select("*")
+    .eq("id",id)
+    .eq("user_id",currentUser.id)
+    .maybeSingle();
+
+  if(error||!r){toast(error?.message||"Request not found.");return;}
+
+  if(r.creator_edit_used||r.status!=="open"||r.admin_reply){
+    toast("This request can no longer be edited.");
+    return;
   }
-$("#sendRequest").onclick=async()=>{
+
+  modal("Edit Support Request",`
+    <form id="editSupportForm">
+      <div class="field">
+        <label>Request type</label>
+        <select name="request_type">
+          ${["Campaign issue","Submission correction","Payment question","Account problem","Other"].map(t=>`
+            <option ${r.request_type===t?"selected":""}>${t}</option>
+          `).join("")}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Subject</label>
+        <input name="subject" required maxlength="160" value="${safe(r.subject)}">
+      </div>
+
+      <div class="field">
+        <label>Message</label>
+        <textarea name="message" required maxlength="5000">${safe(r.message)}</textarea>
+      </div>
+
+      <button class="btn primary" style="width:100%">Save My Edit</button>
+    </form>
+  `);
+
+  $("#editSupportForm").onsubmit=async e=>{
+    e.preventDefault();
+
+    const form=new FormData(e.currentTarget);
+
+    const patch={
+      request_type:form.get("request_type"),
+      subject:String(form.get("subject")||"").trim(),
+      message:String(form.get("message")||"").trim(),
+      creator_edit_used:true,
+      updated_at:new Date().toISOString()
+    };
+
+    if(!patch.subject||!patch.message){
+      toast("Complete the subject and message.");
+      return;
+    }
+
+    const {error}=await sb.from("user_requests")
+      .update(patch)
+      .eq("id",id)
+      .eq("user_id",currentUser.id)
+      .eq("creator_edit_used",false)
+      .eq("status","open");
+
+    if(error){toast(error.message);return;}
+
+    $("#modalBackdrop").classList.remove("show");
+    toast("Your edit has been saved.");
+    await loadRequests();
+  };
+};
+
+window.deleteSupportRequest=async function(id){
+  if(!requireAuth())return;
+
+  if(!confirm("Delete this support request? This cannot be undone."))return;
+
+  const {error}=await sb.from("user_requests")
+    .delete()
+    .eq("id",id)
+    .eq("user_id",currentUser.id);
+
+  if(error){toast(error.message);return;}
+
+  toast("Support request deleted.");
+  await loadRequests();
+};$("#sendRequest").onclick=async()=>{
 if(!requireAuth())return;
 let row={
 user_id:currentUser.id,
