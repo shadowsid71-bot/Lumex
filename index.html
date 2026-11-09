@@ -1215,6 +1215,181 @@ $("#saveWallet").onclick = async function() {
 };
 
 /* END LUMEX FEATURE UPDATE */
+
+  /* =====================================================
+   LUMEX PROFILE AVATAR DISPLAY FIX
+   Shows uploaded profile pictures in sidebar
+   and campaign leaderboard.
+===================================================== */
+
+const lumexAvatarStyle = document.createElement("style");
+
+lumexAvatarStyle.textContent = `
+#sideAvatar {
+  position:relative;
+  overflow:hidden;
+  flex-shrink:0;
+}
+
+.lumex-avatar-img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+
+.leader-creator {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.leader-avatar {
+  width:34px;
+  height:34px;
+  min-width:34px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#b5ffd0,#237c4a);
+  color:#062011;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  position:relative;
+  overflow:hidden;
+}
+`;
+
+document.head.appendChild(lumexAvatarStyle);
+
+/* SAFE AVATAR URL */
+function lumexAvatarURL(url) {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+
+    if (!["https:", "http:"].includes(parsed.protocol)) {
+      return "";
+    }
+
+    return parsed.href;
+  } catch {
+    return "";
+  }
+}
+
+/* CREATE AVATAR HTML */
+function lumexAvatarHTML(url, name, size = 34) {
+  const initial = safe((name || "C").charAt(0).toUpperCase());
+  const image = lumexAvatarURL(url);
+
+  return `
+    <div class="leader-avatar"
+      style="width:${size}px;height:${size}px;min-width:${size}px">
+
+      <span>${initial}</span>
+
+      ${
+        image
+          ? `<img class="lumex-avatar-img"
+               src="${safe(image)}"
+               alt="Creator profile picture"
+               onerror="this.remove()">`
+          : ""
+      }
+
+    </div>
+  `;
+}
+
+/* UPDATE SIDEBAR PROFILE PICTURE */
+const originalLumexSyncUserUI = syncUserUI;
+
+syncUserUI = async function() {
+
+  await originalLumexSyncUserUI();
+
+  const name =
+    currentProfile?.full_name ||
+    currentProfile?.username ||
+    currentUser?.email?.split("@")[0] ||
+    "Creator";
+
+  const avatar = document.getElementById("sideAvatar");
+
+  if (avatar) {
+    const image = lumexAvatarURL(currentProfile?.avatar_url);
+
+    avatar.innerHTML = `
+      <span>${safe(name.charAt(0).toUpperCase())}</span>
+
+      ${
+        image
+          ? `<img class="lumex-avatar-img"
+               src="${safe(image)}"
+               alt="Profile picture"
+               onerror="this.remove()">`
+          : ""
+      }
+    `;
+  }
+};
+
+/* LEADERBOARD WITH CREATOR PROFILE PICTURES */
+$("#leaderCampaign").onchange = async function(e) {
+
+  const id = e.target.value;
+
+  if (!id) return;
+
+  const { data, error } = await sb.rpc(
+    "get_campaign_leaderboard",
+    { p_campaign_id: id }
+  );
+
+  if (error) {
+    $("#leaderRows").innerHTML =
+      `<tr><td colspan="4">${safe(error.message)}</td></tr>`;
+    return;
+  }
+
+  $("#leaderRows").innerHTML = (data || [])
+    .map((r, i) => {
+
+      const name =
+        r.username ||
+        r.full_name ||
+        "Creator";
+
+      return `
+        <tr>
+          <td>#${i + 1}</td>
+
+          <td>
+            <div class="leader-creator">
+
+              ${lumexAvatarHTML(r.avatar_url, name, 34)}
+
+              <span>${safe(name)}</span>
+
+            </div>
+          </td>
+
+          <td>
+            ${Number(r.verified_views || 0).toLocaleString()}
+          </td>
+
+          <td>${money(r.earnings)}</td>
+        </tr>
+      `;
+
+    }).join("") ||
+    '<tr><td colspan="4">No leaderboard entries yet.</td></tr>';
+};
+
+/* END PROFILE AVATAR DISPLAY FIX */
   
 init();
 </script>
