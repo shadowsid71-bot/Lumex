@@ -559,6 +559,14 @@ $("#sideEmail").textContent=currentUser?.email||"Sign in to continue";
 $("#sideAvatar").textContent=name[0]?.toUpperCase()||"G";
 $("#authBtn").textContent=currentUser?"Sign out":"Sign in";
 $("#adminNav").classList.toggle("hidden",!isAdmin());
+
+if(isAdmin()){
+  startAdminSupportRealtime();
+  refreshAdminSupportBadge();
+}else{
+  stopAdminSupportRealtime();
+}
+
 $("#statProfile").textContent=currentUser?"Active":"Guest";
 $("#statProfileSub").textContent=currentUser?"Account connected":"Sign in to unlock features";
 if(currentUser)loadStats();
@@ -1292,7 +1300,50 @@ function ensureAdminSupportPanel() {
   `);
 }
 
-async function loadAdminSupportRequests() {
+/* ADMIN SUPPORT NOTIFICATIONS */
+
+async function refreshAdminSupportBadge(){
+  if(!isAdmin())return;
+
+  const {count,error}=await sb
+    .from("user_requests")
+    .select("id",{count:"exact",head:true})
+    .eq("status","open");
+
+  if(error)return;
+
+  const badge=$("#adminSupportNavBadge");
+
+  if(badge){
+    badge.textContent=count||0;
+    badge.style.display=count?"inline-block":"none";
+  }
+}
+
+function startAdminSupportRealtime(){
+  if(!sb||!isAdmin()||adminSupportChannel)return;
+
+  adminSupportChannel=sb
+    .channel("lumex-admin-support-inbox")
+    .on("postgres_changes",{
+      event:"INSERT",
+      schema:"public",
+      table:"user_requests"
+    },payload=>{
+      toast("🔔 New creator support request received!");
+      refreshAdminSupportBadge();
+      loadAdminSupportRequests();
+    })
+    .subscribe();
+}
+
+function stopAdminSupportRealtime(){
+  if(adminSupportChannel&&sb){
+    sb.removeChannel(adminSupportChannel);
+    adminSupportChannel=null;
+  }
+}
+  async function loadAdminSupportRequests() {
   const box = document.querySelector("#adminSupportRows");
 
   if (!box || !isAdmin()) return;
@@ -1401,7 +1452,8 @@ loadAdmin = async function() {
   await Promise.all([
   loadAdminSocialAccounts(),
   loadAdminWallets(),
-  loadAdminSupportRequests()
+  loadAdminSupportRequests(),
+  refreshAdminSupportBadge()
 ]);
 
   /* Prevent paid submissions from being reversed in the UI */
