@@ -1431,6 +1431,98 @@ go = function(page){
 };
 
 /* END COMPLETE PROFILE PICTURE FEATURE */  
+
+  /* =================================================
+   LUMEX FIX: RESTORE PROFILE PICTURE AFTER REFRESH
+================================================= */
+
+function lumexAvatarURL(url) {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    return ["https:", "http:"].includes(parsed.protocol)
+      ? parsed.href
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+/* Restore avatar in sidebar */
+const lumexOriginalSync = syncUserUI;
+
+syncUserUI = async function () {
+  await lumexOriginalSync();
+
+  const avatar = document.getElementById("sideAvatar");
+  const url = lumexAvatarURL(currentProfile?.avatar_url);
+
+  if (!avatar) return;
+
+  if (currentUser && url) {
+    avatar.innerHTML = `
+      <img
+        src="${url}"
+        alt="Profile picture"
+        style="
+          width:100%;
+          height:100%;
+          object-fit:cover;
+          border-radius:50%;
+          display:block;
+        "
+      >
+    `;
+  } else {
+    const name =
+      currentProfile?.full_name ||
+      currentProfile?.username ||
+      currentUser?.email?.split("@")[0] ||
+      "G";
+
+    avatar.textContent = name.charAt(0).toUpperCase();
+  }
+
+  /* Restore profile page preview */
+  const preview = document.getElementById("lumexPhotoPreview");
+
+  if (preview && url) {
+    preview.src = url;
+    preview.style.display = "block";
+  }
+};
+
+/* Reload saved avatar from Supabase */
+const lumexOriginalLoadProfile = loadProfile;
+
+loadProfile = async function () {
+  await lumexOriginalLoadProfile();
+
+  if (!currentUser) return;
+
+  const { data, error } = await sb
+    .from("profiles")
+    .select("avatar_url, full_name, username")
+    .eq("id", currentUser.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Avatar loading error:", error);
+    return;
+  }
+
+  if (data) {
+    currentProfile = {
+      ...currentProfile,
+      ...data
+    };
+  }
+
+  await syncUserUI();
+};
+
+/* END AVATAR RESTORE FIX */
   
 init();
 </script>
