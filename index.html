@@ -1087,19 +1087,15 @@ async function loadAdminSocialAccounts() {
           </span>
         </td>
         <td>
-          ${a.status === "verified"
-            ? "Verified"
-            : `
-              <button class="btn small"
-                onclick="reviewSocialAccount('${safe(a.id)}','verified')">
-                Approve
-              </button>
+          <button class="btn small"
+            onclick="reviewSocialAccount('${safe(a.id)}','verified')">
+            Approve
+          </button>
 
-              <button class="btn small danger"
-                onclick="reviewSocialAccount('${safe(a.id)}','rejected')">
-                Reject
-              </button>
-            `}
+          <button class="btn small danger"
+            onclick="reviewSocialAccount('${safe(a.id)}','rejected')">
+            Reject
+          </button>
         </td>
       </tr>
     `).join("")
