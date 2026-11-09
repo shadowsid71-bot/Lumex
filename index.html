@@ -1158,6 +1158,118 @@ window.reviewSocialAccount = async function(id, status) {
   loadAdminSocialAccounts();
 };
 
+  /* ADMIN SUPPORT INBOX */
+
+function ensureAdminSupportPanel() {
+  const page = document.querySelector("#page-admin");
+
+  if (!page || document.querySelector("#adminSupportInbox")) return;
+
+  page.insertAdjacentHTML("beforeend", `
+    <div class="card admin-extra" id="adminSupportInbox">
+      <h3>Support Inbox</h3>
+      <p class="muted">Review creator reports and respond to requests.</p>
+      <div id="adminSupportRows">Loading support requests...</div>
+    </div>
+  `);
+}
+
+async function loadAdminSupportRequests() {
+  const box = document.querySelector("#adminSupportRows");
+
+  if (!box || !isAdmin()) return;
+
+  box.innerHTML = "Loading support requests...";
+
+  const { data, error } = await sb
+    .from("user_requests")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    box.innerHTML = emptyHTML("Could not load reports", error.message);
+    return;
+  }
+
+  if (!data || !data.length) {
+    box.innerHTML = emptyHTML("No support requests yet", "Creator reports will appear here.");
+    return;
+  }
+
+  box.innerHTML = data.map(r => `
+    <div style="padding:16px;margin:12px 0;border:1px solid var(--line);border-radius:12px">
+
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <b>${safe(r.subject)}</b>
+        <span class="status ${r.status === "answered" ? "paid" : ""}">
+          ${r.status === "answered" ? "Answered" : "Awaiting response"}
+        </span>
+      </div>
+
+      <p class="muted">
+        ${safe(r.request_type)} · ${dateText(r.created_at)}
+      </p>
+
+      <small class="muted">Creator ID: ${safe(r.user_id)}</small>
+
+      <div style="padding:12px;margin-top:10px;background:var(--panel2);border-radius:8px;white-space:pre-wrap">
+        ${safe(r.message)}
+      </div>
+
+      ${r.admin_reply ? `
+        <p><b>Previous response:</b></p>
+        <div style="padding:12px;background:var(--panel2);border-radius:8px;white-space:pre-wrap">
+          ${safe(r.admin_reply)}
+        </div>
+      ` : ""}
+
+      <textarea
+        id="supportReply-${safe(r.id)}"
+        placeholder="Write your response..."
+        style="width:100%;min-height:90px;margin-top:12px"
+      >${safe(r.admin_reply || "")}</textarea>
+
+      <button class="btn primary"
+        onclick="replyToSupportRequest('${safe(r.id)}')">
+        Send Response
+      </button>
+
+    </div>
+  `).join("");
+}
+
+window.replyToSupportRequest = async function(id) {
+  if (!isAdmin()) {
+    toast("Admin access required.");
+    return;
+  }
+
+  const field = document.getElementById("supportReply-" + id);
+  const reply = field?.value.trim();
+
+  if (!reply) {
+    toast("Write a response first.");
+    return;
+  }
+
+  const { error } = await sb
+    .from("user_requests")
+    .update({
+      admin_reply: reply,
+      status: "answered",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) {
+    toast(error.message);
+    return;
+  }
+
+  toast("Response sent successfully.");
+  await loadAdminSupportRequests();
+};
 /* EXTEND EXISTING ADMIN LOADER */
 const originalLoadAdmin = loadAdmin;
 
@@ -1167,11 +1279,12 @@ loadAdmin = async function() {
   if (!isAdmin()) return;
 
   ensureAdminExtraPanels();
-
+  ensureAdminSupportPanel();
   await Promise.all([
-    loadAdminSocialAccounts(),
-    loadAdminWallets()
-  ]);
+  loadAdminSocialAccounts(),
+  loadAdminWallets(),
+  loadAdminSupportRequests()
+]);
 
   /* Prevent paid submissions from being reversed in the UI */
   document.querySelectorAll("#adminSubmissionRows tr").forEach(row => {
