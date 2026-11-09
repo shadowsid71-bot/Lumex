@@ -66,6 +66,7 @@ body{overflow-x:hidden}body:after{content:"";position:fixed;inset:0;pointer-even
 /* LUMEXOL ALWAYS-ON GLASS MOTION */.stat,.card,.campaign{animation:luxGlassPulse 5s ease-in-out infinite}.stat:nth-child(2),.campaign:nth-child(2){animation-delay:.7s}.stat:nth-child(3),.campaign:nth-child(3){animation-delay:1.4s}.stat:nth-child(4){animation-delay:2.1s}.hero{animation:luxHero 12s ease-in-out infinite,luxHeroGlow 5s ease-in-out infinite alternate}.campaign:after,.stat:after,.card:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(115deg,transparent 30%,rgba(180,255,205,.09) 50%,transparent 70%);background-size:220% 100%;animation:luxGlassShine 6s linear infinite}@keyframes luxGlassPulse{0%,100%{box-shadow:0 12px 35px rgba(0,0,0,.2),0 0 0 rgba(53,216,121,0)}50%{box-shadow:0 18px 45px rgba(0,0,0,.3),0 0 16px rgba(53,216,121,.09)}}@keyframes luxGlassShine{to{background-position:-220% 0}}@keyframes luxHeroGlow{to{box-shadow:0 0 35px rgba(53,216,121,.15),0 22px 70px rgba(0,0,0,.35)}}@media(prefers-reduced-motion:reduce){.stat,.card,.campaign,.hero{animation:none!important}}
 
   /* LUMEXOL PREMIUM VISUAL QUALITY UPGRADE */:root{--bg:#050a08;--panel:rgba(17,34,25,.82);--panel2:rgba(14,28,21,.95);--line:rgba(154,255,190,.19);--green:#b1ffca;--green2:#38e982;--shadow:0 24px 75px rgba(0,0,0,.42)}body{background:radial-gradient(ellipse at 15% 5%,rgba(32,190,95,.2),transparent 38%),radial-gradient(ellipse at 90% 65%,rgba(20,135,91,.16),transparent 38%),linear-gradient(145deg,#050a08,#09150e 55%,#050b08)}.hero{background:linear-gradient(125deg,rgba(30,125,68,.58),rgba(10,28,19,.91) 55%,rgba(20,100,60,.42));border:1px solid rgba(157,255,189,.3);box-shadow:0 25px 80px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.12)}.hero h2{line-height:1.12;text-shadow:0 4px 25px rgba(67,255,137,.16)}.hero p{color:#c0d9c9;line-height:1.8}.stat,.card,.campaign{background:linear-gradient(145deg,rgba(26,48,35,.88),rgba(9,20,14,.88));border:1px solid rgba(157,255,189,.16);box-shadow:0 15px 45px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.055);backdrop-filter:blur(25px) saturate(155%)}.stat{padding:23px}.stat strong{font-size:30px;letter-spacing:-1.3px}.section-head h3{font-size:20px;letter-spacing:-.5px}.campaign{padding:22px}.campaign h4{font-size:18px;letter-spacing:-.4px}.campaign p{color:#b0c5b7;line-height:1.8}.tag{background:rgba(68,240,135,.13);border-color:rgba(100,255,157,.28);color:#aaffc5}.btn{border-color:rgba(157,255,189,.2);background:rgba(255,255,255,.065);backdrop-filter:blur(15px)}.btn.primary{background:linear-gradient(120deg,#c4ffda,#54e991 55%,#27c96b);color:#062012;box-shadow:0 8px 30px rgba(53,216,121,.24),inset 0 1px rgba(255,255,255,.6)}.btn.primary:hover{box-shadow:0 12px 38px rgba(53,216,121,.38);filter:brightness(1.08)}.nav button.active{background:linear-gradient(110deg,rgba(73,245,137,.2),rgba(73,245,137,.055));border-color:rgba(133,255,177,.3);box-shadow:inset 3px 0 #65ed9a;color:#eafff1}.field input,.field textarea,.field select{background:rgba(4,15,9,.82);border-color:rgba(157,255,189,.17);transition:.25s}.field input:focus,.field textarea:focus,.field select:focus{background:#0b1b11;border-color:#83f5a7;box-shadow:0 0 0 4px rgba(103,232,138,.1),0 0 22px rgba(53,216,121,.08)}.table th{color:#a0bbaa}.table td{color:#e5f7e9}.table tr:hover td{background:rgba(87,245,143,.045)}.mobile-nav{background:rgba(5,14,9,.91);border-top:1px solid rgba(157,255,189,.2);backdrop-filter:blur(28px) saturate(160%)}.mobile-nav button.active{color:#aaffc5;text-shadow:0 0 15px rgba(100,255,157,.45)}.empty{background:rgba(15,35,22,.38);border-color:rgba(133,255,177,.22)}.modal{background:linear-gradient(145deg,#122319,#09130d);border-color:rgba(157,255,189,.25)}.toast{background:rgba(13,35,21,.96);backdrop-filter:blur(20px);border-color:rgba(157,255,189,.3)}@media(max-width:760px){.hero{border-radius:23px}.stat{padding:16px}.stat strong{font-size:25px}.campaign{padding:19px}.section-head h3{font-size:18px}}
+@media(max-width:760px){.stat,.card,.campaign{animation:none!important}.stat:after,.card:after,.campaign:after{animation:none!important;opacity:.2}.stat,.card,.campaign{backdrop-filter:blur(12px)!important}}
 </style>
 </head>
 <body>
@@ -657,60 +658,67 @@ campaignCard = function(c) {
 };
 
 /* LOAD CAMPAIGNS AND BUDGET USAGE */
-loadCampaigns = async function() {
-  const box = $("#campaignGrid");
-  const featured = $("#featuredCampaigns");
+/* OPTIMIZED CAMPAIGN LOADING */
+let campaignLoadPromise = null;
 
-  box.innerHTML = emptyHTML("Loading campaigns…", "Please wait.");
+loadCampaigns = function() {
+  if (campaignLoadPromise) return campaignLoadPromise;
 
-  const {data, error} = await fetchCampaigns();
+  campaignLoadPromise = (async () => {
+    const box = $("#campaignGrid");
+    const featured = $("#featuredCampaigns");
 
-  if (error) {
-    box.innerHTML = emptyHTML(
-      "Could not load campaigns",
-      error.message
-    );
-    featured.innerHTML = box.innerHTML;
-    return;
-  }
+    box.innerHTML = emptyHTML("Loading campaigns…", "Please wait.");
 
-  campaignsCache = data || [];
-  campaignBudgetUsage = Object.create(null);
+    const [campaignResult, budgetResult] = await Promise.allSettled([
+      fetchCampaigns(),
+      sb.rpc("get_campaign_budget_usage")
+    ]);
 
-  try {
-    const usage = await sb.rpc("get_campaign_budget_usage");
+    if (campaignResult.status === "rejected" || campaignResult.value.error) {
+      const message = campaignResult.status === "rejected"
+        ? campaignResult.reason?.message || "Network error"
+        : campaignResult.value.error.message;
 
-    if (!usage.error) {
-      (usage.data || []).forEach(item => {
-        campaignBudgetUsage[item.campaign_id] =
-          Number(item.spent || 0);
+      box.innerHTML = emptyHTML("Could not load campaigns", message);
+      featured.innerHTML = box.innerHTML;
+      return;
+    }
+
+    campaignsCache = campaignResult.value.data || [];
+    campaignBudgetUsage = Object.create(null);
+
+    if (budgetResult.status === "fulfilled" && !budgetResult.value.error) {
+      (budgetResult.value.data || []).forEach(item => {
+        campaignBudgetUsage[item.campaign_id] = Number(item.spent || 0);
       });
     }
-  } catch (error) {
-    console.warn("Campaign budget usage unavailable:", error);
-  }
 
-  const open = campaignsCache.filter(
-    c => (c.status || "active") === "active"
-  );
+    const open = campaignsCache.filter(
+      c => (c.status || "active").toLowerCase() === "active"
+    );
 
-  box.innerHTML = open.length
-    ? open.map(campaignCard).join("")
-    : emptyHTML("No active campaigns", "Check back soon.");
+    box.innerHTML = open.length
+      ? open.map(campaignCard).join("")
+      : emptyHTML("No active campaigns", "Check back soon.");
 
-  featured.innerHTML = open.length
-    ? open.slice(0, 3).map(campaignCard).join("")
-    : emptyHTML("No featured campaigns", "New opportunities will appear here.");
+    featured.innerHTML = open.length
+      ? open.slice(0, 3).map(campaignCard).join("")
+      : emptyHTML("No featured campaigns", "New opportunities will appear here.");
 
-  $("#statCampaigns").textContent = open.length;
+    $("#statCampaigns").textContent = open.length;
 
-  const select = $("#leaderCampaign");
+    const select = $("#leaderCampaign");
+    select.innerHTML =
+      '<option value="">Select campaign</option>' +
+      campaignsCache.map(c =>
+        `<option value="${safe(c.id)}">${safe(c.title)}</option>`
+      ).join("");
+  })().finally(() => {
+    campaignLoadPromise = null;
+  });
 
-  select.innerHTML =
-    '<option value="">Select campaign</option>' +
-    campaignsCache.map(c =>
-      `<option value="${safe(c.id)}">${safe(c.title)}</option>`
-    ).join("");
+  return campaignLoadPromise;
 };
 
 /* FIX CAMPAIGN JOINING */
