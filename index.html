@@ -1,1373 +1,531 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Lumex – Clipping campaigns</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090d0c">
+<title>Lumex — Creator Clipping Network</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#0B0D0E;--card:#141718;--line:#23282B;--tx:#EDF1F2;--mut:#8C979B;--g:#22E58B;--r:#FF5C5C;--y:#FFC857;color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-a{color:inherit;text-decoration:none}
-.w{max-width:1000px;margin:auto;padding:0 18px}
-header{position:sticky;top:0;background:#0B0D0Eee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:5}
-header .w{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;flex-wrap:wrap}
-.logo{font-weight:800;font-size:22px}
-.logo i{color:var(--g);font-style:normal}
-#links{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--mut)}
-.b,.btn,button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:10px;padding:8px 14px}
-.btn{display:inline-block;padding:12px 20px;font-weight:700}
-.g{background:var(--g);color:#04130B;border-color:var(--g)}
-.red{color:var(--r)}
-.hero{padding:56px 0 24px;animation:in .6s}
-.hero h1{font-size:clamp(38px,8vw,68px);line-height:1.02;margin:0 0 14px}
-.hero em{color:var(--g);font-style:normal}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.mut{color:var(--mut)}
-h2{margin:34px 0 14px}
-.stats,.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
-.stats div,.card,.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;animation:in .5s}
-.stats b{display:block;font-size:26px;color:var(--g)}
-.stats span{color:var(--mut);font-size:13px}
-.card h3{margin:10px 0}
-.top{display:flex;justify-content:space-between;align-items:center}
-.th{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--g),#0a7a4a);display:grid;place-items:center;font-weight:800;color:#04130B}
-.badge{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--g);color:var(--g);text-transform:uppercase}
-.badge.paused{border-color:var(--y);color:var(--y)}
-.badge.closed{border-color:var(--r);color:var(--r)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin-bottom:14px}
-.kv span{color:var(--mut)}
-.gr{color:var(--g)}
-input,select,textarea{width:100%;font:inherit;background:#0E1112;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0 12px}
-label{font-size:13px;color:var(--mut)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-.sc{overflow-x:auto}
-.err{color:var(--r)}
-ul{padding-left:20px}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--g);color:#04130B;padding:10px 16px;border-radius:12px;display:none;font-weight:600;max-width:90vw;z-index:9}
-@keyframes in{from{opacity:0;transform:translateY(10px)}}
-@media(max-width:640px){.stats,.grid3{grid-template-columns:1fr}}
-</style>
+:root{--bg:#080c0b;--panel:rgba(18,27,24,.78);--panel2:#111a17;--line:rgba(177,255,211,.12);--text:#f2fff7;--muted:#91a59a;--green:#9dffbd;--green2:#35d879;--danger:#ff7474;--amber:#ffd27b;--radius:22px;--shadow:0 22px 70px rgba(0,0,0,.35)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 12% 0%,rgba(32,135,80,.19),transparent 34%),radial-gradient(ellipse at 95% 30%,rgba(25,106,74,.14),transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.14;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(to bottom,black,transparent 80%)}button,input,textarea,select{font:inherit}button{cursor:pointer}.orb{position:fixed;width:300px;height:300px;border-radius:50%;filter:blur(90px);opacity:.13;pointer-events:none;animation:float 12s ease-in-out infinite alternate}.orb.one{background:#32e57e;top:10%;left:-180px}.orb.two{background:#1e9872;right:-180px;bottom:5%;animation-delay:-5s}@keyframes float{to{transform:translate(80px,55px) scale(1.18)}}@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(91,255,156,0)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{to{background-position:-200% 0}}.app{display:flex;min-height:100vh;position:relative}.sidebar{width:252px;position:fixed;inset:0 auto 0 0;padding:25px 17px;background:rgba(7,13,10,.82);backdrop-filter:blur(22px);border-right:1px solid var(--line);z-index:20;display:flex;flex-direction:column}.brand{display:flex;align-items:center;gap:11px;padding:4px 10px 30px;font-weight:900;letter-spacing:1.7px;font-size:19px}.brand-mark{width:37px;height:37px;border-radius:13px;background:linear-gradient(135deg,#baffce,#30d979);display:grid;place-items:center;color:#062011;font-weight:1000;box-shadow:0 0 28px #42e98255}.brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--muted);font-weight:700;margin-top:2px}.nav-label{font-size:10px;letter-spacing:2px;color:#64776c;padding:12px 12px 8px}.nav{display:grid;gap:6px}.nav button{border:1px solid transparent;background:transparent;color:#9caf9f;text-align:left;padding:12px 13px;border-radius:13px;display:flex;align-items:center;gap:12px;transition:.22s}.nav button:hover,.nav button.active{background:linear-gradient(110deg,rgba(87,245,143,.14),rgba(87,245,143,.035));border-color:rgba(133,255,177,.15);color:#eafff1;transform:translateX(2px)}.nav-icon{width:20px;text-align:center;font-size:16px}.side-bottom{margin-top:auto}.profile-mini{border-top:1px solid var(--line);padding:17px 8px 0;display:flex;gap:10px;align-items:center}.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#b5ffd0,#237c4a);color:#062011;display:grid;place-items:center;font-weight:900;flex:none}.profile-mini b{font-size:12px;display:block}.profile-mini small{font-size:10px;color:var(--muted)}.main{margin-left:252px;width:calc(100% - 252px);padding:25px 34px 70px;max-width:1600px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:15px}.eyebrow{font-size:10px;letter-spacing:2.5px;color:var(--green);font-weight:800}.topbar h1{font-size:clamp(22px,3vw,31px);margin:5px 0 0;letter-spacing:-1px}.top-actions{display:flex;gap:10px;align-items:center}.icon-btn,.btn{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--text);border-radius:13px;padding:11px 14px;transition:.2s}.icon-btn:hover,.btn:hover{border-color:#8bffb2;transform:translateY(-2px);box-shadow:0 9px 26px #36d97820}.btn.primary{background:linear-gradient(135deg,#baffcf,#5ce991);color:#062012;border:0;font-weight:900}.btn.danger{color:#ffb2b2;border-color:#ff747455}.btn.small{padding:8px 11px;font-size:12px}.mobile-menu{display:none}.page{display:none;animation:rise .35s ease}.page.active{display:block}.hero{padding:30px;border:1px solid rgba(161,255,193,.2);border-radius:28px;background:linear-gradient(115deg,rgba(37,115,69,.34),rgba(15,29,22,.74) 55%,rgba(25,75,49,.35));position:relative;overflow:hidden;box-shadow:var(--shadow)}.hero:after{content:"✦";position:absolute;font-size:210px;right:6%;top:-55px;color:#baffcf12;transform:rotate(18deg)}.hero h2{font-size:clamp(25px,4vw,42px);letter-spacing:-1.8px;max-width:650px;margin:12px 0}.hero p{color:#b3c8ba;max-width:590px;line-height:1.7;margin:0 0 22px}.hero-actions{display:flex;gap:10px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0 28px}.stat,.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);backdrop-filter:blur(18px);box-shadow:var(--shadow)}.stat{padding:19px;transition:.25s}.stat:hover,.campaign:hover{transform:translateY(-4px);border-color:#8bffb255}.stat-top{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.stat-icon{color:var(--green);font-size:17px}.stat strong{display:block;font-size:27px;margin-top:13px;letter-spacing:-1px}.stat small{color:#82dba1;font-size:11px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:27px 0 15px}.section-head h3{margin:0;font-size:18px}.section-head p{margin:5px 0 0;color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.campaign{padding:19px;transition:.25s}.campaign-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.tag{font-size:10px;color:var(--green);background:#75f5a31a;border:1px solid #75f5a32b;padding:6px 9px;border-radius:30px}.campaign h4{font-size:17px;margin:17px 0 8px}.muted{color:var(--muted)}.campaign p{font-size:12px;line-height:1.6;color:#9caf9f;min-height:38px}.campaign-meta{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px;margin-top:15px;font-size:11px;color:var(--muted)}.campaign-meta b{color:#e8fff0;font-size:14px;display:block;margin-top:4px}.card{padding:21px}.two-col{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.field{display:grid;gap:7px;margin-bottom:13px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:#a8bdb0}.field input,.field textarea,.field select{width:100%;background:#07100c;border:1px solid #263b30;border-radius:12px;padding:12px 13px;color:#effff4;outline:none}.field input:focus,.field textarea:focus,.field select:focus{border-color:#78efa0;box-shadow:0 0 0 3px #67e88a17}.field textarea{min-height:90px;resize:vertical}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:580px}.table th,.table td{text-align:left;padding:13px 11px;border-bottom:1px solid var(--line);font-size:12px}.table th{color:#80978a;font-size:10px;text-transform:uppercase;letter-spacing:1px}.status{padding:5px 8px;border-radius:20px;font-size:10px;background:#ffffff10;color:#b7c8bd}.status.approved,.status.paid,.status.active,.status.verified{background:#3ee98720;color:#91ffb5}.status.pending,.status.under_review{background:#ffd27b20;color:#ffd27b}.status.rejected,.status.closed{background:#ff747420;color:#ff9c9c}.empty{padding:35px;text-align:center;color:var(--muted);border:1px dashed #355344;border-radius:16px}.empty b{display:block;color:#dfffea;margin-bottom:7px}.notice{padding:13px 15px;border:1px solid #ffd27b44;background:#ffd27b0c;border-radius:13px;color:#e8d4a7;font-size:12px;line-height:1.6;margin-bottom:15px}.toast{position:fixed;right:20px;bottom:20px;z-index:100;background:#14251b;border:1px solid #8bffb255;border-radius:14px;padding:14px 18px;box-shadow:var(--shadow);max-width:min(360px,calc(100vw - 40px));animation:rise .25s}.modal-backdrop{position:fixed;inset:0;background:#000b;backdrop-filter:blur(8px);z-index:60;display:none;place-items:center;padding:16px}.modal-backdrop.show{display:grid}.modal{width:min(560px,100%);max-height:90vh;overflow:auto;background:#0d1711;border:1px solid #7af3a044;border-radius:23px;padding:23px;box-shadow:var(--shadow);animation:rise .25s}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.modal-head h3{margin:0}.close{border:0;background:transparent;color:white;font-size:23px}.auth-screen{position:fixed;inset:0;z-index:80;background:radial-gradient(ellipse at 50% 0%,#164a2b 0%,#080c0b 60%);display:none;place-items:center;padding:18px}.auth-screen.show{display:grid}.auth-box{width:min(430px,100%);padding:28px;border:1px solid #8bffb244;border-radius:25px;background:#0c1711ed;box-shadow:var(--shadow)}.auth-box h2{margin:10px 0}.auth-box p{color:var(--muted);font-size:13px;line-height:1.6}.auth-box .field{margin-top:14px}.auth-foot{text-align:center;color:var(--muted);font-size:11px;margin-top:16px}.loader{width:18px;height:18px;border:2px solid #ffffff33;border-top-color:#aaffc4;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle}.progress{height:7px;border-radius:20px;background:#ffffff12;overflow:hidden}.progress span{display:block;height:100%;background:linear-gradient(90deg,#4ddc83,#baffcf);border-radius:20px}.mobile-nav{display:none}.hidden{display:none!important}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.sidebar{transform:translateX(-105%);transition:.28s;width:270px}.sidebar.open{transform:translateX(0)}.main{margin:0;width:100%;padding:18px 15px 95px}.mobile-menu{display:inline-flex}.topbar{margin-bottom:20px}.topbar h1{font-size:22px}.top-actions .desktop-only{display:none}.hero{padding:23px 19px}.hero:after{right:-25px;font-size:150px}.stats{gap:9px}.stat{padding:14px}.stat strong{font-size:23px}.grid,.two-col{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;padding:9px 8px calc(9px + env(safe-area-inset-bottom));background:#07100dee;backdrop-filter:blur(20px);border-top:1px solid var(--line);justify-content:space-around}.mobile-nav button{background:transparent;border:0;color:#82978a;font-size:10px;display:grid;gap:3px;justify-items:center}.mobile-nav button.active{color:var(--green)}.mobile-nav span{font-size:17px}.section-head{align-items:flex-start}.table{min-width:650px}}
 
-<!-- CINEMATIC LUMEX ANIMATION -->
-<style id="lumex-cinematic-motion">
-:root{--lx-neon:#22e58b;--lx-blue:#54c8ff}
+/* PREMIUM GLASS + MOTION LAYER */
+:root{--glass-highlight:rgba(190,255,215,.22)}
+body{overflow-x:hidden}body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 50% 45%,transparent 25%,rgba(0,0,0,.22) 100%)}
+.app{position:relative;z-index:1}.orb{z-index:0}
+.sidebar{background:rgba(7,13,10,.68);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%);box-shadow:12px 0 55px rgba(0,0,0,.12)}
+.stat,.card,.hero,.auth-box,.modal,.mobile-nav,.topbar .icon-btn,.topbar .btn{backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%)}
+.stat,.card{position:relative;isolation:isolate;overflow:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),border-color .32s,box-shadow .32s,background .32s}
+.stat:before,.card:before,.hero:before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.075),transparent 38%,rgba(119,255,168,.035));opacity:.75;z-index:-1}
+.stat:hover,.card:hover{border-color:rgba(157,255,189,.34);box-shadow:0 26px 75px rgba(0,0,0,.38),0 0 28px rgba(63,220,125,.075)}
+.btn,.icon-btn,.nav button,.mobile-nav button{will-change:transform;transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s,border-color .22s,background .22s}
+.btn:active,.icon-btn:active,.nav button:active{transform:scale(.97)}
+.btn.primary{box-shadow:0 8px 28px rgba(53,216,121,.16);background-size:180% 180%;animation:buttonGlow 5s ease infinite}
+@keyframes buttonGlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.page.active{animation:pageEnter .48s cubic-bezier(.16,1,.3,1) both}
+@keyframes pageEnter{from{opacity:0;transform:translateY(13px) scale(.995);filter:blur(4px)}to{opacity:1;transform:none;filter:blur(0)}}
+.reveal-item{animation:cardReveal .62s cubic-bezier(.16,1,.3,1) both;animation-delay:var(--reveal-delay,0ms)}
+@keyframes cardReveal{from{opacity:0;transform:translateY(22px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+.stat strong{background:linear-gradient(100deg,#f2fff7 15%,#aaffc7 48%,#f2fff7 82%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:numberShine 7s linear infinite}
+@keyframes numberShine{to{background-position:220% center}}
+.progress span{background-size:200% 100%;animation:shimmer 2.4s linear infinite}
+/* CINEMATIC TWO-SECOND BRAND INTRO */
+#lumexIntro{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;overflow:hidden;background:#050907;isolation:isolate;animation:introExit .65s cubic-bezier(.7,0,.2,1) 1.55s forwards}
+.intro-grid{position:absolute;inset:-35%;opacity:.24;background-image:linear-gradient(rgba(135,255,177,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(135,255,177,.13) 1px,transparent 1px);background-size:54px 54px;transform:perspective(600px) rotateX(62deg) scale(1.7);transform-origin:center 70%;animation:gridDrift 5s linear infinite}
+@keyframes gridDrift{to{background-position:0 108px,108px 0}}
+.intro-glow{position:absolute;width:min(70vw,620px);height:min(70vw,620px);border-radius:50%;background:radial-gradient(circle,rgba(48,220,116,.2),rgba(25,120,69,.08) 38%,transparent 70%);filter:blur(12px);animation:glowPulse 2s ease-in-out infinite alternate}
+@keyframes glowPulse{to{transform:scale(1.22);opacity:.7}}
+.intro-orbit{position:absolute;width:270px;height:270px;border:1px solid rgba(157,255,189,.2);border-radius:50%;box-shadow:0 0 45px rgba(53,216,121,.07),inset 0 0 35px rgba(53,216,121,.04)}
+.orbit-a{transform:rotateX(68deg) rotateZ(-25deg);animation:orbitSpin 4s linear infinite}
+.orbit-b{width:330px;height:330px;border-color:rgba(157,255,189,.09);transform:rotateY(68deg) rotateZ(35deg);animation:orbitSpin 6s linear infinite reverse}
+@keyframes orbitSpin{to{rotate:0 0 1 360deg}}
+.intro-content{position:relative;text-align:center;display:grid;justify-items:center;animation:introRise .9s cubic-bezier(.16,1,.3,1) both}
+@keyframes introRise{from{opacity:0;transform:translateY(20px) scale(.92);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+.intro-mark{width:68px;height:68px;border-radius:22px;display:grid;place-items:center;background:linear-gradient(140deg,#c8ffda,#35d879);color:#061b0e;font-size:38px;font-weight:1000;box-shadow:0 0 22px #35d87966,0 0 80px #35d87933;transform:rotate(-8deg);animation:markFloat 2s ease-in-out infinite alternate}
+.intro-mark span{transform:rotate(8deg)}
+@keyframes markFloat{to{transform:translateY(-7px) rotate(3deg);box-shadow:0 0 35px #35d87999,0 0 100px #35d87944}}
+.intro-wordmark{font-size:clamp(34px,8vw,54px);font-weight:1000;letter-spacing:9px;margin:22px 0 12px;padding-left:9px;color:#effff4;text-shadow:0 0 35px #8bffb244}
+.intro-wordmark span{color:#8dffb2}
+.intro-rule{height:2px;width:190px;background:rgba(157,255,189,.12);overflow:hidden;border-radius:5px}
+.intro-rule i{display:block;width:100%;height:100%;background:linear-gradient(90deg,transparent,#9dffbd,transparent);transform:translateX(-100%);animation:ruleSweep 1.25s ease-in-out .2s infinite}
+@keyframes ruleSweep{to{transform:translateX(100%)}}
+.intro-caption{font-size:9px;letter-spacing:4px;color:#9cb7a5;margin-top:13px;animation:captionFade 1s .25s both}
+@keyframes captionFade{from{opacity:0;letter-spacing:8px}to{opacity:1;letter-spacing:4px}}
+.intro-loader{width:116px;height:2px;margin-top:31px;background:#ffffff18;overflow:hidden;border-radius:5px}
+.intro-loader i{display:block;height:100%;width:40%;background:#9dffbd;box-shadow:0 0 14px #9dffbd;animation:loaderTravel 1.2s ease-in-out infinite}
+@keyframes loaderTravel{from{transform:translateX(-120%)}to{transform:translateX(300%)}}
+.intro-footer{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom));font-size:9px;letter-spacing:3px;color:#678071;animation:captionFade 1s .5s both}
+@keyframes introExit{to{opacity:0;visibility:hidden;transform:scale(1.045);filter:blur(8px);pointer-events:none}}
+@media(max-width:600px){.intro-orbit{width:220px;height:220px}.orbit-b{width:275px;height:275px}.intro-wordmark{letter-spacing:6px;padding-left:6px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}#lumexIntro{animation:none;opacity:0;visibility:hidden}}
 
-#lx-intro{
-position:fixed;
-inset:0;
-z-index:99999;
-display:grid;
-place-items:center;
-overflow:hidden;
-background:#05090a;
-color:#f4fff9;
-isolation:isolate;
-transition:opacity .8s ease,visibility .8s ease
-}
-
-#lx-intro.lx-out{
-opacity:0;
-visibility:hidden;
-pointer-events:none
-}
-
-#lx-canvas{
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-opacity:.8;
-z-index:0
-}
-
-.lx-grid{
-position:absolute;
-inset:-50%;
-background-image:
-linear-gradient(rgba(34,229,139,.10) 1px,transparent 1px),
-linear-gradient(90deg,rgba(34,229,139,.10) 1px,transparent 1px);
-background-size:58px 58px;
-transform:perspective(550px) rotateX(62deg) translateY(18%);
-mask-image:linear-gradient(transparent 5%,#000 45%,transparent 90%);
-animation:lx-gridmove 18s linear infinite;
-z-index:0
-}
-
-.lx-aura{
-position:absolute;
-width:min(78vw,720px);
-aspect-ratio:1;
-border-radius:50%;
-background:radial-gradient(circle,rgba(34,229,139,.17),rgba(34,229,139,.035) 38%,transparent 70%);
-filter:blur(12px);
-animation:lx-breathe 4s ease-in-out infinite;
-z-index:1
-}
-
-.lx-content{
-position:relative;
-z-index:2;
-width:min(92vw,720px);
-text-align:center;
-padding:30px 18px;
-animation:lx-rise 1.1s cubic-bezier(.16,1,.3,1) both
-}
-
-.lx-mark{
-width:112px;
-height:112px;
-margin:0 auto 35px;
-position:relative;
-display:grid;
-place-items:center;
-perspective:600px
-}
-
-.lx-orbit{
-position:absolute;
-inset:-18px;
-border:1px solid rgba(34,229,139,.55);
-border-radius:50%;
-transform:rotateX(68deg) rotateZ(-25deg);
-box-shadow:0 0 25px rgba(34,229,139,.13);
-animation:lx-orbit 7s linear infinite
-}
-
-.lx-orbit:after{
-content:"";
-position:absolute;
-width:8px;
-height:8px;
-left:12%;
-top:17%;
-border-radius:50%;
-background:#b5ffdc;
-box-shadow:0 0 16px 5px #22e58b
-}
-
-.lx-orbit.lx-two{
-inset:-31px;
-border-color:rgba(84,200,255,.28);
-transform:rotateX(68deg) rotateZ(35deg);
-animation-direction:reverse;
-animation-duration:11s
-}
-
-.lx-cube{
-width:66px;
-height:66px;
-position:relative;
-transform-style:preserve-3d;
-animation:lx-cuberotate 8s linear infinite
-}
-
-.lx-face{
-position:absolute;
-inset:0;
-border:1px solid rgba(160,255,210,.95);
-background:linear-gradient(145deg,rgba(34,229,139,.28),rgba(34,229,139,.025));
-box-shadow:inset 0 0 20px rgba(34,229,139,.15),0 0 20px rgba(34,229,139,.12);
-backdrop-filter:blur(5px)
-}
-
-.lx-face:nth-child(1){transform:translateZ(33px)}
-.lx-face:nth-child(2){transform:rotateY(180deg) translateZ(33px)}
-.lx-face:nth-child(3){transform:rotateY(90deg) translateZ(33px)}
-.lx-face:nth-child(4){transform:rotateY(-90deg) translateZ(33px)}
-.lx-face:nth-child(5){transform:rotateX(90deg) translateZ(33px)}
-.lx-face:nth-child(6){transform:rotateX(-90deg) translateZ(33px)}
-
-.lx-eyebrow{
-font-size:11px;
-letter-spacing:.42em;
-text-transform:uppercase;
-color:#8ca99b;
-margin:0 0 14px;
-animation:lx-fade .9s .2s both
-}
-
-.lx-title{
-font-size:clamp(34px,8vw,68px);
-font-weight:900;
-line-height:1.02;
-letter-spacing:-.055em;
-margin:0;
-text-shadow:0 0 35px rgba(34,229,139,.12);
-animation:lx-titlein 1s .25s both
-}
-
-.lx-title span{
-color:var(--lx-neon);
-text-shadow:0 0 30px rgba(34,229,139,.35)
-}
-
-.lx-tagline{
-margin:18px 0 30px;
-color:#a6b8af;
-font-size:clamp(12px,2vw,15px);
-letter-spacing:.16em;
-text-transform:uppercase;
-animation:lx-fade 1s .55s both
-}
-
-.lx-loader{
-width:min(230px,62vw);
-height:3px;
-background:#18231e;
-border-radius:8px;
-margin:0 auto;
-overflow:hidden;
-animation:lx-fade .8s .7s both
-}
-
-.lx-loader i{
-display:block;
-height:100%;
-width:35%;
-background:linear-gradient(90deg,transparent,#22e58b,#baffd9);
-box-shadow:0 0 14px #22e58b;
-animation:lx-load 2.4s .7s ease-in-out forwards
-}
-
-.lx-skip{
-position:absolute;
-z-index:4;
-right:22px;
-bottom:22px;
-border:1px solid rgba(180,255,220,.22);
-border-radius:99px;
-padding:9px 15px;
-background:rgba(10,20,15,.55);
-color:#cce8d8;
-font:11px system-ui;
-letter-spacing:.16em;
-text-transform:uppercase;
-cursor:pointer;
-backdrop-filter:blur(12px);
-transition:.25s
-}
-
-.lx-skip:hover{
-border-color:#22e58b;
-color:#fff;
-box-shadow:0 0 22px rgba(34,229,139,.2)
-}
-
-/* GLASS UI ANIMATIONS */
-header{
-background:rgba(8,12,11,.84)!important;
-backdrop-filter:blur(18px)!important;
--webkit-backdrop-filter:blur(18px)!important;
-transition:box-shadow .3s ease,border-color .3s ease
-}
-
-header:after{
-content:"";
-position:absolute;
-left:0;
-right:0;
-bottom:-1px;
-height:1px;
-background:linear-gradient(90deg,transparent,rgba(34,229,139,.4),transparent);
-pointer-events:none
-}
-
-.card,.box,.stats>div{
-position:relative;
-overflow:hidden;
-transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .35s,box-shadow .35s
-}
-
-.card:before,.box:before,.stats>div:before{
-content:"";
-position:absolute;
-inset:0 auto 0 -130%;
-width:65%;
-background:linear-gradient(110deg,transparent,rgba(255,255,255,.055),transparent);
-transform:skewX(-12deg);
-transition:left .75s;
-pointer-events:none
-}
-
-.card:hover:before,.box:hover:before,.stats>div:hover:before{
-left:150%
-}
-
-.card:hover,.box:hover,.stats>div:hover{
-transform:translateY(-4px);
-border-color:rgba(34,229,139,.38);
-box-shadow:0 14px 38px rgba(0,0,0,.22),0 0 24px rgba(34,229,139,.055)
-}
-
-.btn,button{
-transition:transform .2s ease,box-shadow .25s ease,filter .25s ease
-}
-
-.btn:hover,button:hover{
-filter:brightness(1.08);
-box-shadow:0 0 20px rgba(34,229,139,.12)
-}
-
-.btn:active,button:active{
-transform:scale(.97)
-}
-
-input:focus,select:focus,textarea:focus{
-outline:none;
-border-color:rgba(34,229,139,.75);
-box-shadow:0 0 0 3px rgba(34,229,139,.09)
-}
-
-#app{animation:lx-pagein .45s ease both}
-
-@keyframes lx-gridmove{to{background-position:58px 58px}}
-@keyframes lx-breathe{0%,100%{transform:scale(.92);opacity:.65}50%{transform:scale(1.08);opacity:1}}
-@keyframes lx-orbit{to{transform:rotateX(68deg) rotateZ(335deg)}}
-@keyframes lx-cuberotate{0%{transform:rotateX(-24deg) rotateY(0)}100%{transform:rotateX(336deg) rotateY(360deg)}}
-@keyframes lx-rise{from{opacity:0;transform:translateY(28px) scale(.97);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
-@keyframes lx-titlein{from{opacity:0;transform:translateY(18px);letter-spacing:.02em}to{opacity:1;transform:none;letter-spacing:-.055em}}
-@keyframes lx-fade{from{opacity:0}to{opacity:1}}
-@keyframes lx-load{0%{transform:translateX(-120%)}100%{transform:translateX(340%)}}
-@keyframes lx-pagein{from{opacity:.55;transform:translateY(7px)}to{opacity:1;transform:none}}
-
-@media(max-width:640px){
-.lx-mark{transform:scale(.88);margin-bottom:26px}
-.lx-skip{right:14px;bottom:14px}
-.card:hover,.box:hover,.stats>div:hover{transform:none}
-}
-
-@media(prefers-reduced-motion:reduce){
-#lx-intro *,.card,.box,.stats>div,#app{animation:none!important;transition:none!important}
-.lx-loader i{width:100%}
-}
 </style>
 </head>
-
 <body>
 
-<!-- CINEMATIC INTRO -->
-<div id="lx-intro" aria-label="Welcome to Lumexol">
-<canvas id="lx-canvas"></canvas>
-<div class="lx-grid"></div>
-<div class="lx-aura"></div>
-
-<div class="lx-content">
-
-<div class="lx-mark">
-<div class="lx-orbit"></div>
-<div class="lx-orbit lx-two"></div>
-
-<div class="lx-cube">
-<i class="lx-face"></i>
-<i class="lx-face"></i>
-<i class="lx-face"></i>
-<i class="lx-face"></i>
-<i class="lx-face"></i>
-<i class="lx-face"></i>
+<!-- LUMEX CINEMATIC INTRO -->
+<div id="lumexIntro" aria-label="Welcome to Lumex">
+  <div class="intro-grid"></div><div class="intro-glow"></div>
+  <div class="intro-orbit orbit-a"></div><div class="intro-orbit orbit-b"></div>
+  <div class="intro-content">
+    <div class="intro-mark"><span>L</span></div>
+    <div class="intro-wordmark">LUMEX<span>.</span></div>
+    <div class="intro-rule"><i></i></div>
+    <div class="intro-caption">THE CREATOR NETWORK</div>
+    <div class="intro-loader"><i></i></div>
+  </div>
+  <div class="intro-footer">WELCOME TO LUMEXOL AGENCY</div>
 </div>
+<div class="orb one"></div><div class="orb two"></div>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-mark">L</div><div>LUMEX<small>CREATOR NETWORK</small></div></div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav class="nav" id="sideNav">
+    <button class="active" data-page="home"><span class="nav-icon">⌂</span>Overview</button>
+    <button data-page="campaigns"><span class="nav-icon">▦</span>Campaigns</button>
+    <button data-page="submissions"><span class="nav-icon">↗</span>My submissions</button>
+    <button data-page="leaderboard"><span class="nav-icon">♛</span>Leaderboard</button>
+    <button data-page="wallet"><span class="nav-icon">◇</span>Wallet</button>
+    <button data-page="social"><span class="nav-icon">◎</span>Social accounts</button>
+    <button data-page="support"><span class="nav-icon">☏</span>Support requests</button>
+  </nav>
+  <div class="nav-label" style="margin-top:18px">ACCOUNT</div>
+  <nav class="nav"><button data-page="profile"><span class="nav-icon">◉</span>My profile</button><button data-page="admin" id="adminNav" class="hidden"><span class="nav-icon">⚙</span>Admin panel</button></nav>
+  <div class="side-bottom"><div class="profile-mini"><div class="avatar" id="sideAvatar">G</div><div><b id="sideName">Guest creator</b><small id="sideEmail">Sign in to continue</small></div></div></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px"><button class="icon-btn mobile-menu" id="menuBtn">☰</button><div><div class="eyebrow">LUMEX CREATOR PORTAL</div><h1 id="pageTitle">Your creator hub</h1></div></div>
+    <div class="top-actions"><button class="icon-btn" id="notificationBtn" title="Notifications">♧</button><button class="btn desktop-only" id="authBtn">Sign in</button><button class="btn primary" id="topSubmit">＋ Submit a clip</button></div>
+  </header>
+
+  <section class="page active" id="page-home">
+    <div class="hero"><div class="eyebrow">WELCOME TO LUMEXOL AGENCY</div><h2>Turn attention into <span style="color:var(--green)">earnings.</span></h2><p>Discover creator campaigns, publish high-performing clips, submit your links and track your progress — all in one place.</p><div class="hero-actions"><button class="btn primary" data-go="campaigns">Explore campaigns →</button><button class="btn" data-go="submissions">Track submissions</button></div></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-top">Available campaigns <span class="stat-icon">▦</span></div><strong id="statCampaigns">—</strong><small>Open opportunities</small></div>
+      <div class="stat"><div class="stat-top">Your submissions <span class="stat-icon">↗</span></div><strong id="statSubmissions">—</strong><small>Clips submitted</small></div>
+      <div class="stat"><div class="stat-top">Approved earnings <span class="stat-icon">₦</span></div><strong id="statEarnings">₦0</strong><small>Based on approved submissions</small></div>
+      <div class="stat"><div class="stat-top">Profile status <span class="stat-icon">✦</span></div><strong id="statProfile">Guest</strong><small id="statProfileSub">Sign in to unlock features</small></div>
+    </div>
+    <div class="section-head"><div><h3>Featured campaigns</h3><p>Fresh opportunities from the network</p></div><button class="btn small" data-go="campaigns">View all →</button></div>
+    <div class="grid" id="featuredCampaigns"><div class="empty">Loading campaigns…</div></div>
+  </section>
+
+  <section class="page" id="page-campaigns"><div class="section-head"><div><h3>Campaign marketplace</h3><p>Find a campaign that matches your content style.</p></div><button class="btn primary small" id="refreshCampaigns">↻ Refresh</button></div><div class="grid" id="campaignGrid"><div class="empty">Loading campaigns…</div></div></section>
+
+  <section class="page" id="page-submissions"><div class="section-head"><div><h3>My submissions</h3><p>Follow every clip from submitted to reviewed.</p></div><button class="btn primary small" id="newSubmission">＋ New submission</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Campaign</th><th>Platform</th><th>Claimed views</th><th>Potential earnings</th><th>Status</th><th>Date</th></tr></thead><tbody id="submissionRows"><tr><td colspan="6" class="muted">Sign in to view your submissions.</td></tr></tbody></table></div></section>
+
+  <section class="page" id="page-leaderboard"><div class="section-head"><div><h3>Campaign leaderboard</h3><p>Top creators and their verified performance.</p></div></div><div class="card"><div class="notice">Choose a campaign below to load its leaderboard.</div><div class="field"><label>Campaign</label><select id="leaderCampaign"><option value="">Select campaign</option></select></div><div class="table-wrap"><table class="table"><thead><tr><th>Rank</th><th>Creator</th><th>Verified views</th><th>Earnings</th></tr></thead><tbody id="leaderRows"><tr><td colspan="4" class="muted">Select a campaign.</td></tr></tbody></table></div></div></section>
+
+  <section class="page" id="page-wallet"><div class="section-head"><div><h3>Your wallet</h3><p>Manage payout details and track your earnings.</p></div></div><div class="notice">Wallet address management is available here. Actual withdrawals require a secure payout backend and admin processing; this page does not send cryptocurrency automatically.</div><div class="stats"><div class="stat"><div class="stat-top">Approved earnings</div><strong id="walletEarned">₦0</strong></div><div class="stat"><div class="stat-top">Minimum withdrawal</div><strong>₦10,000</strong><small>Example threshold — configure your actual payout policy</small></div></div><div class="card"><h3>Wallet address</h3><div class="form-grid"><div class="field"><label>Network</label><select id="walletNetwork"><option value="SOL">Solana (SOL)</option><option value="USDT_BASE">USDT (Base)</option><option value="ETH">Ethereum (ETH)</option></select></div><div class="field"><label>Wallet address</label><input id="walletAddress" placeholder="Paste your wallet address"></div></div><button class="btn primary" id="saveWallet">Save wallet</button></div></section>
+
+  <section class="page" id="page-social"><div class="section-head"><div><h3>Social accounts</h3><p>Connect the profiles you use for clipping campaigns.</p></div></div><div class="card"><div class="form-grid"><div class="field"><label>Platform</label><select id="socialPlatform"><option value="TikTok">TikTok</option><option value="X">X</option><option value="Instagram">Instagram</option><option value="YouTube">YouTube</option></select></div><div class="field"><label>Username</label><input id="socialUsername" placeholder="@yourusername"></div><div class="field full"><label>Profile URL</label><input id="socialUrl" placeholder="https://..."></div></div><button class="btn primary" id="saveSocial">Submit account for review</button><div class="section-head"><div><h3>Submitted accounts</h3></div></div><div id="socialList" class="empty">Sign in to view your connected accounts.</div></div></section>
+
+  <section class="page" id="page-support"><div class="section-head"><div><h3>Support centre</h3><p>Report a campaign issue, submission mistake or payment question.</p></div></div><div class="card"><div class="notice">Support requests are stored in the user_requests table. Create that table and its RLS policies in Supabase before using this form.</div><div class="field"><label>Request type</label><select id="requestType"><option>Campaign issue</option><option>Submission correction</option><option>Payment question</option><option>Account problem</option><option>Other</option></select></div><div class="field"><label>Subject</label><input id="requestSubject" placeholder="Briefly describe the issue"></div><div class="field"><label>Details</label><textarea id="requestMessage" placeholder="Explain what happened…"></textarea></div><button class="btn primary" id="sendRequest">Send request</button><div class="section-head"><div><h3>Your requests</h3></div></div><div id="requestList" class="empty">Sign in to view support requests.</div></div></section>
+
+  <section class="page" id="page-profile"><div class="section-head"><div><h3>Creator profile</h3><p>Keep your account information up to date.</p></div></div><div class="card"><div class="form-grid"><div class="field"><label>Full name</label><input id="profileName" placeholder="Your name"></div><div class="field"><label>Username</label><input id="profileUsername" placeholder="@username"></div><div class="field full"><label>Bio</label><textarea id="profileBio" placeholder="Tell campaign owners about your content…"></textarea></div></div><button class="btn primary" id="saveProfile">Save profile</button></div></section>
+
+  <section class="page" id="page-admin"><div class="section-head"><div><h3>Admin control room</h3><p>Manage campaigns and review creator submissions.</p></div><button class="btn primary small" id="createCampaignBtn">＋ Create campaign</button></div><div class="notice">Admin access is determined by the profiles.role value. Protect admin updates with Supabase RLS policies; hiding this page is not security by itself.</div><div class="card"><h3>Campaign management</h3><div class="table-wrap"><table class="table"><thead><tr><th>Campaign</th><th>CPM</th><th>Budget</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adminCampaignRows"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></div><div class="card" style="margin-top:16px"><h3>Submission review</h3><div class="table-wrap"><table class="table"><thead><tr><th>Creator</th><th>Campaign</th><th>Claimed views</th><th>Proof</th><th>Status</th><th>Actions</th></tr></thead><tbody id="adminSubmissionRows"><tr><td colspan="6">Loading…</td></tr></tbody></table></div></div></section>
+</main>
 </div>
+<nav class="mobile-nav" id="mobileNav"><button class="active" data-page="home"><span>⌂</span>Home</button><button data-page="campaigns"><span>▦</span>Campaigns</button><button data-page="submissions"><span>↗</span>Submissions</button><button data-page="wallet"><span>◇</span>Wallet</button><button data-page="profile"><span>◉</span>Profile</button></nav>
 
-<p class="lx-eyebrow">The creator campaign network</p>
-
-<h1 class="lx-title">
-WELCOME TO <span>LUMEXOL</span>
-</h1>
-
-<p class="lx-tagline">
-Clip it. &nbsp; Post it. &nbsp; Get paid.
-</p>
-
-<div class="lx-loader"><i></i></div>
-
-</div>
-
-<button class="lx-skip" id="lx-skip" type="button">Skip intro ↗</button>
-</div>
-
-<header>
-<div class="w">
-<a class="logo" href="#/">Lumex<i>.</i></a>
-<div id="links"></div>
-</div>
-</header>
-
-<main class="w" id="app"></main>
-<div id="toast"></div>
-
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Submit a clip</h3><button class="close" id="closeModal">×</button></div><div id="modalContent"></div></div></div>
+<div class="auth-screen" id="authScreen"><div class="auth-box"><div class="brand" style="padding:0"><div class="brand-mark">L</div><div>LUMEX<small>CREATOR NETWORK</small></div></div><h2>Welcome back.</h2><p>Sign in to access campaigns, submit clips and track your earnings.</p><form id="authForm"><div class="field"><label>Email address</label><input type="email" id="authEmail" required placeholder="you@example.com"></div><div class="field"><label>Password</label><input type="password" id="authPassword" required minlength="6" placeholder="At least 6 characters"></div><button class="btn primary" style="width:100%;margin-top:8px" id="emailAuthBtn">Sign in</button></form><button class="btn" id="signupBtn" style="width:100%;margin-top:9px">Create account</button><button class="btn" id="googleBtn" style="width:100%;margin-top:9px">Continue with Google</button><button class="btn" id="xBtn" style="width:100%;margin-top:9px">Continue with X</button><div class="auth-foot">By continuing, you agree to use Lumex responsibly.</div><button class="close" id="closeAuth" style="position:absolute;right:calc(50% - 205px);top:calc(50% - 270px)">×</button></div></div>
 <script>
-const U="https://fthdldveifntsxqfadgi.supabase.co",K="sb_publishable_mC_LV7HxprKRqV2DO7Uj8A_dnyHIAV6";
-const sb=supabase.createClient(U,K),$=s=>document.querySelector(s),app=$('#app');
+/* ================= CONFIGURATION =================
+   Use only your Supabase publishable/anon key here.
+   NEVER place service_role keys, X client secrets or private keys in this file.
+*/
+const SUPABASE_URL = "https://fthdldveifntsxqfadgi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mC_LV7HxprKRqV2DO7Uj8A_dnyHIAV6";
+const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let currentUser = null, currentProfile = null, campaignsCache = [], submissionsCache = [];
+const money = n => "₦" + Number(n||0).toLocaleString("en-NG",{maximumFractionDigits:2});
+const safe = v => String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const toast = msg => {let el=document.createElement("div");el.className="toast";el.textContent=msg;document.body.append(el);setTimeout(()=>el.remove(),3600)};
+const dateText = d => d ? new Date(d).toLocaleDateString() : "—";
+const isAdmin = () => currentProfile?.role === "admin";
+function requireAuth(){if(!currentUser){openAuth();return false}return true}
+function openAuth(){ $("#authScreen").classList.add("show") }
+function closeAuth(){ $("#authScreen").classList.remove("show") }
+function go(page){$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));$("#pageTitle").textContent=({home:"Your creator hub",campaigns:"Campaign marketplace",submissions:"My submissions",leaderboard:"Creator leaderboard",wallet:"Your wallet",social:"Social accounts",support:"Support centre",profile:"My profile",admin:"Admin control room"})[page]||"Lumex";$("#sidebar").classList.remove("open");if(page==="campaigns")loadCampaigns();if(page==="submissions")loadSubmissions();if(page==="wallet")loadWallet();if(page==="social")loadSocial();if(page==="support")loadRequests();if(page==="profile")fillProfile();if(page==="admin")loadAdmin()}
+$$("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
+$$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
+$("#menuBtn").onclick=()=>$("#sidebar").classList.toggle("open");
+$("#authBtn").onclick=openAuth;$("#closeAuth").onclick=closeAuth;$("#closeModal").onclick=()=>$("#modalBackdrop").classList.remove("show");
+$("#notificationBtn").onclick=()=>{if(!requireAuth())return;toast("Notifications are being prepared. Connect the user_notifications table to enable the inbox.")};
+$("#topSubmit").onclick=()=>openSubmission();$("#newSubmission").onclick=()=>openSubmission();
+function modal(title,html){$("#modalTitle").textContent=title;$("#modalContent").innerHTML=html;$("#modalBackdrop").classList.add("show")}
+function emptyHTML(title,desc){return `<div class="empty"><b>${safe(title)}</b>${safe(desc||"Nothing to show yet.")}</div>`}
+async function fetchCampaigns(){if(!sb)return {data:[],error:{message:"Supabase library unavailable"}};return await sb.from("campaigns").select("*").order("created_at",{ascending:false})}
+function campaignCard(c){let status=(c.status||"active").toLowerCase();return `<article class="card campaign"><div class="campaign-top"><span class="tag">${safe((c.platforms||["Multi-platform"]).toString().replaceAll(","," · "))}</span><span class="status ${safe(status)}">${safe(status)}</span></div><h4>${safe(c.title)}</h4><p>${safe(c.description||c.mission||"Create engaging clips and earn from verified performance.")}</p><div class="campaign-meta"><div>CPM<b>${money(c.cpm)}</b></div><div>Budget<b>${money(c.budget)}</b></div><div>Max payout<b>${money(c.max_payout)}</b></div></div><button class="btn primary small" style="width:100%;margin-top:15px" onclick="viewCampaign('${safe(c.id)}')">View campaign →</button></article>`}
+async function loadCampaigns(){let box=$("#campaignGrid"),featured=$("#featuredCampaigns");box.innerHTML=emptyHTML("Loading campaigns…","Please wait.");let {data,error}=await fetchCampaigns();if(error){box.innerHTML=emptyHTML("Could not load campaigns",error.message);featured.innerHTML=box.innerHTML;return}campaignsCache=data||[];let open=campaignsCache.filter(c=>(c.status||"active")==="active");box.innerHTML=open.length?open.map(campaignCard).join(""):emptyHTML("No active campaigns","Check back soon for new opportunities.");featured.innerHTML=open.length?open.slice(0,3).map(campaignCard).join(""):emptyHTML("No featured campaigns","New opportunities will appear here.");$("#statCampaigns").textContent=open.length;let sel=$("#leaderCampaign");sel.innerHTML='<option value="">Select campaign</option>'+campaignsCache.map(c=>`<option value="${safe(c.id)}">${safe(c.title)}</option>`).join("");}
+window.viewCampaign=id=>{let c=campaignsCache.find(x=>x.id===id);if(!c)return;modal(c.title,`<p class="muted">${safe(c.description||c.mission||"Campaign details")}</p><div class="stats"><div class="stat"><small>CPM</small><strong>${money(c.cpm)}</strong></div><div class="stat"><small>Budget</small><strong>${money(c.budget)}</strong></div></div><h4>Requirements</h4><p class="muted">${safe(c.requirements||c.rules||"Follow the campaign brief and submit your original post URL with proof.")}</p><p class="muted">Duration: ${safe(c.duration||"Not specified")} · Minimum views: ${safe(c.min_views||0)}</p><button class="btn primary" style="width:100%" onclick="joinCampaign('${safe(c.id)}')">Join this campaign</button>`)}
+window.joinCampaign=async id=>{if(!requireAuth())return;let {error}=await sb.from("campaign_members").insert({user_id:currentUser.id,campaign_id:id});if(error&& !/duplicate/i.test(error.message)){toast(error.message);return}$("#modalBackdrop").classList.remove("show");toast("Campaign joined.");};
+function openSubmission(campaignId=""){if(!requireAuth())return;let options=campaignsCache.filter(c=>(c.status||"active")==="active").map(c=>`<option value="${safe(c.id)}" ${c.id===campaignId?"selected":""}>${safe(c.title)}</option>`).join("");modal("Submit a clip",`<form id="submissionForm"><div class="field"><label>Campaign</label><select name="campaign_id" required>${options}</select></div><div class="field"><label>Platform</label><select name="platform"><option>TikTok</option><option>X</option><option>Instagram</option><option>YouTube</option></select></div><div class="field"><label>Post URL</label><input name="url" type="url" required placeholder="https://..."></div><div class="field"><label>Your username</label><input name="username" required placeholder="@username"></div><div class="field"><label>Claimed views</label><input name="claimed_views" type="number" min="0" required value="0"></div><div class="field"><label>Screenshot proof (image, max 8 MB)</label><input name="proof" id="proofFile" type="file" accept="image/*"></div><button class="btn primary" style="width:100%">Submit for review</button></form>`);$("#submissionForm").onsubmit=submitClip}
+async function submitClip(e){e.preventDefault();if(!requireAuth())return;let f=e.currentTarget,fd=new FormData(f),proof=f.querySelector('[name="proof"]').files[0],proofPath=null;if(proof){if(proof.size>8*1024*1024){toast("Image must be 8 MB or smaller.");return}if(!proof.type.startsWith("image/")){toast("Please upload an image.");return}let path=`${currentUser.id}/${Date.now()}-${proof.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;let up=await sb.storage.from("proofs").upload(path,proof,{upsert:false});if(up.error){toast("Proof upload failed: "+up.error.message);return}proofPath=path}
+let row={user_id:currentUser.id,campaign_id:fd.get("campaign_id"),platform:fd.get("platform"),url:fd.get("url"),username:fd.get("username"),claimed_views:Number(fd.get("claimed_views")),proof_path:proofPath,status:"pending"};let {error}=await sb.from("submissions").insert(row);if(error){toast(error.message);return}$("#modalBackdrop").classList.remove("show");toast("Clip submitted successfully.");loadSubmissions();loadStats()}
+async function loadSubmissions(){if(!requireAuth())return;let {data,error}=await sb.from("submissions").select("*,campaigns(title,cpm)").eq("user_id",currentUser.id).order("created_at",{ascending:false});let tbody=$("#submissionRows");if(error){tbody.innerHTML=`<tr><td colspan="6">${safe(error.message)}</td></tr>`;return}submissionsCache=data||[];tbody.innerHTML=data.length?data.map(s=>`<tr><td>${safe(s.campaigns?.title||"Campaign")}</td><td>${safe(s.platform)}</td><td>${Number(s.claimed_views||0).toLocaleString()}</td><td>${money(s.earnings)}</td><td><span class="status ${safe(s.status)}">${safe(s.status)}</span></td><td>${dateText(s.created_at)}</td></tr>`).join(""):`<tr><td colspan="6">${emptyHTML("No submissions yet","Submit your first clip to get started.")}</td></tr>`;$("#statSubmissions").textContent=data.length}
+async function loadStats(){if(!currentUser)return;let {data}=await sb.from("submissions").select("earnings,status").eq("user_id",currentUser.id);let total=(data||[]).filter(x=>["approved","paid"].includes(x.status)).reduce((a,x)=>a+Number(x.earnings||0),0);$("#statEarnings").textContent=money(total);$("#walletEarned").textContent=money(total)}
+async function loadWallet(){if(!requireAuth())return;let {data,error}=await sb.from("wallets").select("*").eq("user_id",currentUser.id).maybeSingle();if(!error&&data){$("#walletNetwork").value=data.network||"SOL";$("#walletAddress").value=data.address||""}loadStats()}
+$("#saveWallet").onclick=async()=>{if(!requireAuth())return;let row={user_id:currentUser.id,network:$("#walletNetwork").value,address:$("#walletAddress").value.trim(),updated_at:new Date().toISOString()};if(!row.address){toast("Enter a wallet address.");return}let {data,error}=await sb.from("wallets").select("id").eq("user_id",currentUser.id).maybeSingle();let res=data?await sb.from("wallets").update(row).eq("user_id",currentUser.id):await sb.from("wallets").insert(row);toast(error?.message||res.error?.message||"Wallet saved.");}
+async function loadSocial(){if(!requireAuth())return;let {data,error}=await sb.from("social_accounts").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});$("#socialList").innerHTML=error?emptyHTML("Could not load accounts",error.message):data?.length?data.map(a=>`<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line)"><span>${safe(a.platform)} · ${safe(a.username)}</span><span class="status ${safe(a.status)}">${safe(a.status||"pending")}</span></div>`).join(""):emptyHTML("No social accounts","Add your first account above.")}
 
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=n=>'$'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-const earn=(v,c)=>Math.min(v/1000*c.cpm,c.max_payout);
-
-let me=null,prof=null;
-
-const say=m=>{
-const t=$('#toast');
-t.textContent=m;
-t.style.display='block';
-clearTimeout(say.t);
-say.t=setTimeout(()=>t.style.display='none',3500)
+$("#saveSocial").onclick=async()=>{
+if(!requireAuth())return;
+let row={
+user_id:currentUser.id,
+platform:$("#socialPlatform").value,
+username:$("#socialUsername").value.trim(),
+profile_url:$("#socialUrl").value.trim(),
+status:"pending"
 };
-
-const need=()=>{
-if(!me){location.hash='#/auth';return true}
-};
-
-function nav(){
-$('#links').innerHTML='<a href="#/campaigns">Campaigns</a>'+(me?'<a href="#/dash">Dashboard</a><a href="#/submit">Submit clip</a>':'')+(prof&&prof.role==='admin'?'<a href="#/admin">Admin</a>':'')+(me?'<button id="out">Sign out</button>':'<a class="b" href="#/auth">Sign in</a>');
-const o=$('#out');
-if(o)o.onclick=()=>sb.auth.signOut()
-}
-
-const card=c=>`<div class="card"><div class="top"><div class="th">${esc(c.title[0])}</div><span class="badge ${c.status}">${c.status}</span></div><h3>${esc(c.title)}</h3><div class="kv"><span>CPM</span><b class="gr">${money(c.cpm)} / 1k views</b><span>Budget</span><b>${money(c.budget)}</b><span>Max per post</span><b>${money(c.max_payout)}</b><span>Platforms</span><b>${esc((c.platforms||[]).join(', '))}</b></div><a class="btn g" href="#/c/${c.id}">View Campaign</a></div>`;
-
-async function home(){
-let[{data:s},{data:cs}]=await Promise.all([
-sb.rpc('stats'),
-sb.from('campaigns').select('*').eq('status','active').order('created_at').limit(3)
-]);
-s=s||{};
-
-app.innerHTML=`<section class="hero"><h1>Clip it. Post it. <em>Get paid.</em></h1><p class="mut">Lumex is a clipping marketplace. Join a campaign, post short clips, and earn per 1,000 verified views.</p><div class="row"><a class="btn g" href="#/campaigns">Browse Campaigns</a><a class="btn" href="#/auth">Join as a Clipper</a></div></section>
-<div class="stats"><div><b>${money(s.budget)}</b><span>Total campaign budget</span></div><div><b>${Number(s.views||0).toLocaleString()}</b><span>Verified views</span></div><div><b>${money(s.paid)}</b><span>Paid to creators</span></div></div>
-<h2>How it works</h2><div class="grid3"><div class="box"><b>1. Join</b><p class="mut">Pick a campaign and join it.</p></div><div class="box"><b>2. Post</b><p class="mut">Cut clips from the footage and post them publicly.</p></div><div class="box"><b>3. Get paid</b><p class="mut">Submit proof of views. Once approved, you earn per 1,000 verified views.</p></div></div>
-<h2>Active campaigns</h2><div class="grid">${(cs||[]).map(card).join('')||'<p class="mut">No active campaigns yet.</p>'}</div>`
-}
-
-async function campaigns(){
-const{data}=await sb.from('campaigns').select('*').order('created_at');
-app.innerHTML='<h2>Campaign marketplace</h2><div class="grid">'+(data||[]).map(card).join('')+'</div>'
-}
-
-async function camp(id){
-const{data:c}=await sb.from('campaigns').select('*').eq('id',id).single();
-let joined=false;
-
-if(me){
-const{data:m}=await sb.from('campaign_members').select('user_id').eq('user_id',me.id).eq('campaign_id',id);
-joined=!!(m&&m.length)
-}
-
-app.innerHTML=`<h2>${esc(c.title)} <span class="badge ${c.status}">${c.status}</span></h2><p class="mut">${esc(c.description)}</p>
-<div class="stats"><div><b>${money(c.cpm)}</b><span>per 1,000 views</span></div><div><b>${money(c.budget)}</b><span>Budget</span></div><div><b>${money(c.max_payout)}</b><span>Max per post</span></div></div>
-<h2>Requirements</h2><div class="box"><p>Duration: <b>${esc(c.duration)}</b> · Platforms: <b>${esc((c.platforms||[]).join(', '))}</b></p><ul>${(c.requirements||[]).map(r=>'<li>'+esc(r)+'</li>').join('')}</ul></div>
-<h2>Payment examples</h2><div class="box">${[1e4,5e4,1e5,2e5].map(v=>`<p>${v.toLocaleString()} views = <b class="gr">${money(earn(v,c))}</b></p>`).join('')}<p class="mut">Paid on verified views only. Max ${money(c.max_payout)} per post.</p></div>
-<h2>Links</h2><div class="box"><p>X account to tag: <b>${esc(c.x_account)}</b></p><p>TikTok account: <b>${esc(c.tiktok_account)}</b></p><p>Footage: <a class="gr" href="${esc(c.drive_link)}" target="_blank" rel="noopener">${esc(c.drive_link)}</a></p></div>
-<p>${joined?'<a class="btn g" href="#/submit">Submit a clip</a>':c.status==='active'?'<button class="btn g" id="join">Join Campaign</button>':'<span class="mut">This campaign is not open for joining.</span>'}</p>`;
-
-const j=$('#join');
-if(j)j.onclick=async()=>{
-if(need())return;
-const{error}=await sb.from('campaign_members').insert({user_id:me.id,campaign_id:id});
-if(error)return say(error.message);
-say('Joined!');
-camp(id)
-}
-}
-
-function auth(){
-app.innerHTML=`<h2>Sign in to Lumex</h2><div class="box" style="max-width:420px"><label>Email</label><input id="em" type="email" autocomplete="email"><label>Password (6+ characters)</label><input id="pw" type="password" autocomplete="current-password"><div class="row"><button class="btn g" id="si">Sign in</button><button class="btn" id="su">Create account</button></div><p class="mut">or</p><button class="btn" id="go" style="width:100%">Continue with Google</button></div>`;
-
-$('#si').onclick=async()=>{
-const{error}=await sb.auth.signInWithPassword({email:$('#em').value,password:$('#pw').value});
-error?say(error.message):location.hash='#/dash'
-};
-
-$('#su').onclick=async()=>{
-const{data,error}=await sb.auth.signUp({email:$('#em').value,password:$('#pw').value});
-if(error)return say(error.message);
-data.session?location.hash='#/dash':say('Check your email to confirm your account.')
-};
-
-$('#go').onclick=async()=>{
-const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
-if(error)say(error.message)
-}
-}
-
-async function dash(){
-if(need())return;
-const[{data:m},{data:s}]=await Promise.all([
-sb.from('campaign_members').select('campaigns(id,title)').eq('user_id',me.id),
-sb.from('submissions').select('*,campaigns(title,cpm,max_payout)').eq('user_id',me.id).order('created_at',{ascending:false})
-]);
-
-const sum=st=>s.filter(x=>x.status===st).reduce((a,x)=>a+Number(x.earnings),0);
-const pend=s.filter(x=>x.status==='pending').reduce((a,x)=>a+earn(x.claimed_views||0,x.campaigns),0);
-const views=s.filter(x=>x.status==='approved'||x.status==='paid').reduce((a,x)=>a+(x.verified_views||0),0);
-
-app.innerHTML=`<h2>Your dashboard</h2><div class="stats"><div><b>${views.toLocaleString()}</b><span>Verified views</span></div><div><b>${s.length}</b><span>Submitted clips</span></div><div><b>${(m||[]).length}</b><span>Joined campaigns</span></div></div><br><div class="stats"><div><b style="color:var(--y)">${money(pend)}</b><span>Pending (estimated from claimed views)</span></div><div><b>${money(sum('approved'))}</b><span>Approved</span></div><div><b>${money(sum('paid'))}</b><span>Paid</span></div></div>
-<h2>Joined campaigns</h2><div class="box">${(m||[]).map(x=>`<a class="gr" href="#/c/${x.campaigns.id}">${esc(x.campaigns.title)}</a>`).join('<br>')||'<span class="mut">None yet. <a class="gr" href="#/campaigns">Browse campaigns</a></span>'}</div>
-<h2>Submission history</h2><div class="box sc"><table><tr><th>Date</th><th>Campaign</th><th>Platform</th><th>Views</th><th>Status</th><th>Earned</th></tr>${s.map(x=>`<tr><td>${new Date(x.created_at).toLocaleDateString()}</td><td>${esc(x.campaigns.title)}</td><td>${esc(x.platform)}</td><td>${(x.verified_views??x.claimed_views??0).toLocaleString()}</td><td>${x.status}</td><td>${money(x.earnings)}</td></tr>`).join('')||'<tr><td colspan=6 class="mut">No submissions yet.</td></tr>'}</table></div>`
-}
-
-async function submit(){
-if(need())return;
-const{data:m}=await sb.from('campaign_members').select('campaigns(id,title,platforms,status)').eq('user_id',me.id);
-const cs=(m||[]).map(x=>x.campaigns).filter(c=>c.status==='active');
-
-if(!cs.length){
-app.innerHTML='<h2>Submit a clip</h2><p class="mut">Join an active campaign first. <a class="gr" href="#/campaigns">Browse campaigns</a></p>';
-return
-}
-
-app.innerHTML=`<h2>Submit a clip</h2><div class="box" style="max-width:520px"><label>Campaign</label><select id="sc">${cs.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('')}</select><label>Platform</label><select id="sp">${[...new Set(cs.flatMap(c=>c.platforms||[]))].map(p=>`<option>${esc(p)}</option>`).join('')}</select><label>Video / post URL</label><input id="su" type="url"><label>Your username on that platform</label><input id="sn"><label>Current view count</label><input id="sv" type="number" min="0"><label>Screenshot proof of views</label><input id="sf" type="file" accept="image/*"><button class="btn g" id="go">Submit for review</button></div>`;
-
-$('#go').onclick=async()=>{
-const f=$('#sf').fil e[0];
-
-if(!$('#su').value.trim())return say('Enter the post URL');
-if(!$('#sn').value.trim())return say('Enter your platform username');
-if(!$('#sv').value||Number($('#sv').value)<0)return say('Enter a valid view count');
-
-const campaign=cs.find(c=>c.id===$('#sc').value);
-
-if(!campaign)return say('Select a valid campaign');
-
-const platform=$('#sp').value;
-
-if(!campaign.platforms.includes(platform)){
-return say('That platform is not available for this campaign');
-}
-
-let proof=null;
-
-if(f){
-const ext=f.name.split('.').pop().toLowerCase();
-const path=`${me.id}/${Date.now()}.${ext}`;
-
-const{error:uploadError}=await sb.storage
-.from('proofs')
-.upload(path,f,{upsert:false});
-
-if(uploadError)return say('Proof upload failed: '+uploadError.message);
-
-proof=path;
-}
-
-const{error}=await sb.from('submissions').insert({
-user_id:me.id,
-campaign_id:campaign.id,
-platform,
-url:$('#su').value.trim(),
-username:$('#sn').value.trim(),
-claimed_views:Number($('#sv').value),
-proof_path:proof,
-status:'pending'
-});
-
-if(error)return say(error.message);
-
-say('Clip submitted for review!');
-location.hash='#/dash';
-};
-}
-
-/* PROFILE */
-
-async function profile(){
-if(need())return;
-
-const{data:p,error}=await sb.from('profiles')
-.select('*').eq('id',me.id).single();
-
-if(error)return say(error.message);
-
-const{data:social}=await sb.from('social_accounts')
-.select('*').eq('user_id',me.id);
-
-app.innerHTML=`
-<h2>Your profile</h2>
-
-<div class="box" style="max-width:600px">
-<label>Full name</label>
-<input id="pfname" value="${esc(p.full_name)}">
-
-<label>Username</label>
-<input id="pfuser" value="${esc(p.username)}">
-
-<label>Bio</label>
-<textarea id="pfbio" rows="4">${esc(p.bio)}</textarea>
-
-<label>Email</label>
-<input value="${esc(me.email)}" disabled>
-
-<button class="btn g" id="saveprofile">Save profile</button>
-</div>
-
-<h2>Connected social accounts</h2>
-
-<div class="box" style="max-width:600px">
-<label>Platform</label>
-<select id="socialplatform">
-<option value="X">X</option>
-<option value="TikTok">TikTok</option>
-<option value="YouTube">YouTube</option>
-<option value="Instagram">Instagram</option>
-</select>
-
-<label>Username</label>
-<input id="socialusername" placeholder="@username">
-
-<label>Profile URL</label>
-<input id="socialurl" placeholder="https://...">
-
-<button class="btn g" id="addsocial">Add account</button>
-</div>
-
-<div class="grid">
-${(social||[]).map(x=>`
-<div class="card">
-<div class="top">
-<b>${esc(x.platform)}</b>
-<span class="badge ${x.status}">${esc(x.status)}</span>
-</div>
-<h3>${esc(x.username)}</h3>
-<a class="gr" href="${esc(x.profile_url)}" target="_blank" rel="noopener">View account ↗</a>
-<p class="mut">Followers: ${Number(x.followers_count||0).toLocaleString()}</p>
-</div>
-`).join('')||'<p class="mut">No connected accounts yet.</p>'}
-</div>
-`;
-
-$('#saveprofile').onclick=async()=>{
-const{error}=await sb.from('profiles').update({
-full_name:$('#pfname').value.trim(),
-username:$('#pfuser').value.trim(),
-bio:$('#pfbio').value.trim()
-}).eq('id',me.id);
-
-if(error)return say(error.message);
-
-say('Profile updated!');
-load();
-};
-
-$('#addsocial').onclick=async()=>{
-const platform=$('#socialplatform').value;
-const username=$('#socialusername').value.trim();
-const url=$('#socialurl').value.trim();
-
-if(!username||!url)return say('Complete all social account fields');
-
-try{
-new URL(url);
-}catch{
-return say('Enter a valid profile URL');
-}
-
-const{error}=await sb.from('social_accounts').insert({
-user_id:me.id,
-platform,
-username,
-profile_url:url,
-status:'pending'
-});
-
-if(error)return say(error.message);
-
-say('Social account submitted for verification!');
-profile();
-};
-}
-
-/* NOTIFICATIONS */
-
-async function notifications(){
-if(need())return;
-
-const{data,error}=await sb.from('user_notifications')
-.select('*')
-.eq('user_id',me.id)
-.order('created_at',{ascending:false});
-
-if(error)return say(error.message);
-
-app.innerHTML=`
-<h2>Notifications</h2>
-
-<div class="row">
-<button id="readall">Mark all as read</button>
-</div>
-
-<div class="grid">
-${(data||[]).map(n=>`
-<div class="card" style="${n.read_at?'opacity:.65':''}">
-<div class="top">
-<b>${esc(n.title)}</b>
-<span class="badge">${n.read_at?'Read':'New'}</span>
-</div>
-<p>${esc(n.message)}</p>
-<small class="mut">${new Date(n.created_at).toLocaleString()}</small>
-${!n.read_at?`<p><button data-read="${n.id}">Mark as read</button></p>`:''}
-</div>
-`).join('')||'<p class="mut">You have no notifications.</p>'}
-</div>
-`;
-
-$('#readall').onclick=async()=>{
-const{error}=await sb.from('user_notifications')
-.update({read_at:new Date().toISOString()})
-.eq('user_id',me.id)
-.is('read_at',null);
-
-if(error)return say(error.message);
-
-notifications();
-};
-
-document.querySelectorAll('[data-read]').forEach(b=>{
-b.onclick=async()=>{
-const{error}=await sb.from('user_notifications')
-.update({read_at:new Date().toISOString()})
-.eq('id',b.dataset.read)
-.eq('user_id',me.id);
-
-if(error)return say(error.message);
-
-notifications();
-};
-});
-}
-
-/* WALLET */
-
-async function wallet(){
-if(need())return;
-
-const{data,error}=await sb.from('wallets')
-.select('*').eq('user_id',me.id);
-
-if(error)return say(error.message);
-
-app.innerHTML=`
-<h2>Your wallet</h2>
-
-<div class="box" style="max-width:550px">
-<p class="mut">Add a wallet address where approved campaign earnings can be paid.</p>
-
-<label>Network</label>
-<select id="wn">
-<option value="SOL">Solana</option>
-<option value="USDT_BASE">USDT - Base</option>
-<option value="ETH">Ethereum</option>
-</select>
-
-<label>Wallet address</label>
-<input id="wa" placeholder="Enter your wallet address">
-
-<button class="btn g" id="savewallet">Save wallet</button>
-</div>
-
-<h2>Saved wallets</h2>
-
-<div class="grid">
-${(data||[]).map(w=>`
-<div class="card">
-<div class="top">
-<b>${esc(w.network)}</b>
-<span class="badge">Saved</span>
-</div>
-<p style="overflow-wrap:anywhere">${esc(w.address)}</p>
-<button data-delete-wallet="${w.id}" class="red">Delete wallet</button>
-</div>
-`).join('')||'<p class="mut">No wallets added.</p>'}
-</div>
-
-<div class="box">
-<h3>Withdrawal information</h3>
-<p class="mut">The minimum withdrawal request is $10. Approved earnings and actual wallet transfers are handled separately. Saving a wallet does not automatically send money.</p>
-</div>
-`;
-
-$('#savewallet').onclick=async()=>{
-const network=$('#wn').value;
-const address=$('#wa').value.trim();
-
-if(!address)return say('Enter your wallet address');
-
-if(address.length<20)return say('That wallet address looks too short');
-
-const{error}=await sb.from('wallets').upsert({
-user_id:me.id,
-network,
-address
-},{onConflict:'user_id,network'});
-
-if(error)return say(error.message);
-
-say('Wallet saved!');
-wallet();
-};
-
-document.querySelectorAll('[data-delete-wallet]').forEach(b=>{
-b.onclick=async()=>{
-if(!confirm('Delete this wallet?'))return;
-
-const{error}=await sb.from('wallets')
-.delete()
-.eq('id',b.dataset.deleteWallet)
-.eq('user_id',me.id);
-
-if(error)return say(error.message);
-
-wallet();
-};
-});
-}
-
-/* SUPPORT REQUESTS */
-
-async function requests(){
-if(need())return;
-
-const{data,error}=await sb.from('user_requests')
-.select('*')
-.eq('user_id',me.id)
-.order('created_at',{ascending:false});
-
-if(error){
-app.innerHTML=`
-<h2>Support requests</h2>
-<div class="box">
-<p class="err">The support requests database table needs to be created before this page can work.</p>
-<p class="mut">See the database setup instructions after the code.</p>
-</div>`;
+if(!row.username||!row.profile_url){
+toast("Enter your username and profile URL.");
 return;
 }
-
-app.innerHTML=`
-<h2>Support centre</h2>
-
-<div class="box" style="max-width:600px">
-<p class="mut">Report a campaign issue, incorrect submission, payment problem or other concern.</p>
-
-<label>Request type</label>
-<select id="rtype">
-<option>Campaign issue</option>
-<option>Submission complaint</option>
-<option>Payment issue</option>
-<option>Account issue</option>
-<option>Other</option>
-</select>
-
-<label>Subject</label>
-<input id="rsubject" placeholder="What happened?">
-
-<label>Explain your issue</label>
-<textarea id="rmessage" rows="5" placeholder="Describe your issue..."></textarea>
-
-<button class="btn g" id="sendrequest">Submit request</button>
-</div>
-
-<h2>Your requests</h2>
-
-<div class="grid">
-${(data||[]).map(r=>`
-<div class="card">
-<div class="top">
-<b>${esc(r.subject)}</b>
-<span class="badge">${esc(r.status)}</span>
-</div>
-<p>${esc(r.message)}</p>
-${r.admin_reply?`
-<div class="box">
-<b>Admin response</b>
-<p>${esc(r.admin_reply)}</p>
-</div>`:''}
-<small class="mut">${new Date(r.created_at).toLocaleString()}</small>
-</div>
-`).join('')||'<p class="mut">No requests submitted.</p>'}
-</div>
-`;
-
-$('#sendrequest').onclick=async()=>{
-const subject=$('#rsubject').value.trim();
-const message=$('#rmessage').value.trim();
-
-if(!subject||!message)return say('Complete the subject and message');
-
-const{error}=await sb.from('user_requests').insert({
-user_id:me.id,
-type:$('#rtype').value,
-subject,
-message,
-status:'open'
-});
-
-if(error)return say(error.message);
-
-say('Support request submitted!');
-requests();
+let {error}=await sb.from("social_accounts").insert(row);
+toast(error?.message||"Account submitted for review.");
+loadSocial();
 };
+
+$("#leaderCampaign").onchange=async e=>{
+let id=e.target.value;
+if(!id)return;
+let {data,error}=await sb.rpc("get_campaign_leaderboard",{p_campaign_id:id});
+$("#leaderRows").innerHTML=error
+?`<tr><td colspan="4">${safe(error.message)}</td></tr>`
+:(data||[]).map((r,i)=>`<tr>
+<td>#${i+1}</td>
+<td>${safe(r.username||r.full_name||"Creator")}</td>
+<td>${Number(r.verified_views||0).toLocaleString()}</td>
+<td>${money(r.earnings)}</td>
+</tr>`).join("")||'<tr><td colspan="4">No leaderboard entries yet.</td></tr>';
+};
+
+async function loadRequests(){
+if(!requireAuth())return;
+let {data,error}=await sb.from("user_requests").select("*")
+.eq("user_id",currentUser.id).order("created_at",{ascending:false});
+$("#requestList").innerHTML=error
+?emptyHTML("Requests unavailable",error.message)
+:data?.length
+?data.map(r=>`<div style="padding:12px;border-bottom:1px solid var(--line)">
+<b>${safe(r.subject)}</b>
+<p class="muted">${safe(r.request_type)} · ${safe(r.status||"open")}</p>
+<small class="muted">${dateText(r.created_at)}</small>
+</div>`).join("")
+:emptyHTML("No requests","Your support requests will appear here.");
 }
 
-/* ADMIN DASHBOARD */
-
-async function admin(){
-if(need())return;
-
-if(prof?.role!=='admin'){
-app.innerHTML='<h2>Access denied</h2><p class="err">You do not have administrator permission.</p>';
+$("#sendRequest").onclick=async()=>{
+if(!requireAuth())return;
+let row={
+user_id:currentUser.id,
+request_type:$("#requestType").value,
+subject:$("#requestSubject").value.trim(),
+message:$("#requestMessage").value.trim(),
+status:"open"
+};
+if(!row.subject||!row.message){
+toast("Complete the subject and details.");
 return;
 }
+let {error}=await sb.from("user_requests").insert(row);
+toast(error?.message||"Support request sent.");
+if(!error){
+$("#requestSubject").value="";
+$("#requestMessage").value="";
+loadRequests();
+}
+};
 
-const[
-{data:cs,error:ce},
-{data:subs,error:se},
-{data:users},
-{data:reqs},
-{data:wallets}
-]=await Promise.all([
-sb.from('campaigns').select('*').order('created_at',{ascending:false}),
-sb.from('submissions').select('*,profiles(username,email),campaigns(title,cpm,max_payout)').order('created_at',{ascending:false}),
-sb.from('profiles').select('*').order('created_at',{ascending:false}),
-sb.from('user_requests').select('*').order('created_at',{ascending:false}),
-sb.from('wallets').select('*,profiles(username,email)')
-]);
+function fillProfile(){
+if(!currentUser)return;
+$("#profileName").value=currentProfile?.full_name||"";
+$("#profileUsername").value=currentProfile?.username||"";
+$("#profileBio").value=currentProfile?.bio||"";
+}
 
-if(ce)return say(ce.message);
-if(se)return say(se.message);
+$("#saveProfile").onclick=async()=>{
+if(!requireAuth())return;
+let row={
+id:currentUser.id,
+email:currentUser.email,
+full_name:$("#profileName").value.trim(),
+username:$("#profileUsername").value.trim(),
+bio:$("#profileBio").value.trim()
+};
+let {error}=await sb.from("profiles").upsert(row,{onConflict:"id"});
+if(error){toast(error.message);return;}
+currentProfile={...currentProfile,...row};
+toast("Profile saved.");
+syncUserUI();
+};
 
-app.innerHTML=`
-<h2>Administrator dashboard</h2>
+async function loadAdmin(){
+if(!isAdmin()){
+toast("Admin access required.");
+go("home");
+return;
+}
+let {data:cs,error:ce}=await sb.from("campaigns")
+.select("*").order("created_at",{ascending:false});
 
-<div class="stats">
-<div><b>${(cs||[]).length}</b><span>Total campaigns</span></div>
-<div><b>${(subs||[]).length}</b><span>Total submissions</span></div>
-<div><b>${(users||[]).length}</b><span>Registered users</span></div>
-</div>
-
-<h2>Create campaign</h2>
-
-<div class="box">
-<label>Campaign title</label>
-<input id="ctitle">
-
-<label>Description</label>
-<textarea id="cdesc"></textarea>
-
-<div class="grid3">
-<div><label>CPM ($)</label><input id="ccpm" type="number" min="0" step=".01"></div>
-<div><label>Budget ($)</label><input id="cbudget" type="number" min="0" step=".01"></div>
-<div><label>Maximum payout ($)</label><input id="cmax" type="number" min="0" step=".01"></div>
-</div>
-
-<label>Duration</label>
-<input id="cduration" placeholder="e.g. 30 days">
-
-<label>Platforms (comma separated)</label>
-<input id="cplatforms" placeholder="TikTok, X, YouTube">
-
-<label>Requirements (separate with |)</label>
-<textarea id="crequirements"></textarea>
-
-<label>X account to tag</label>
-<input id="cx">
-
-<label>TikTok account</label>
-<input id="ctiktok">
-
-<label>Footage link</label>
-<input id="cdrive" type="url">
-
-<label>Campaign rules (separate with |)</label>
-<textarea id="crules"></textarea>
-
-<label>Minimum views</label>
-<input id="cminviews" type="number" min="0" value="0">
-
-<label>Mission</label>
-<textarea id="cmission"></textarea>
-
-<button class="btn g" id="createcampaign">Create campaign</button>
-</div>
-
-<h2>Manage campaigns</h2>
-
-<div class="grid">
-${(cs||[]).map(c=>`
-<div class="card">
-<div class="top">
-<b>${esc(c.title)}</b>
-<span class="badge ${c.status}">${esc(c.status)}</span>
-</div>
-<p class="mut">CPM: ${money(c.cpm)} · Budget: ${money(c.budget)}</p>
-
-<select data-cstatus="${c.id}">
-<option value="active" ${c.status==='active'?'selected':''}>Active</option>
-<option value="paused" ${c.status==='paused'?'selected':''}>Paused</option>
-<option value="closed" ${c.status==='closed'?'selected':''}>Closed</option>
-</select>
-
-<button data-update-campaign="${c.id}">Update status</button>
-</div>
-`).join('')}
-</div>
-
-<h2>Submission reviews</h2>
-
-<div class="box sc">
-<table>
-<tr>
-<th>Creator</th>
-<th>Campaign</th>
-<th>Platform</th>
-<th>Claimed views</th>
-<th>Proof</th>
-<th>Decision</th>
-</tr>
-
-${(subs||[]).map(s=>`
-<tr>
-<td>${esc(s.profiles?.username||s.profiles?.email||s.user_id)}</td>
-<td>${esc(s.campaigns?.title)}</td>
-<td>${esc(s.platform)}</td>
-<td>${Number(s.claimed_views||0).toLocaleString()}</td>
-<td>${s.proof_path?`<button data-proof="${esc(s.proof_path)}">View proof</button>`:'None'}</td>
+$("#adminCampaignRows").innerHTML=ce
+?`<tr><td colspan="5">${safe(ce.message)}</td></tr>`
+:(cs||[]).map(c=>`<tr>
+<td>${safe(c.title)}</td>
+<td>${money(c.cpm)}</td>
+<td>${money(c.budget)}</td>
+<td><span class="status ${safe(c.status)}">${safe(c.status)}</span></td>
 <td>
-${s.status==='pending'?`
-<input type="number" min="0" placeholder="Verified views" id="views-${s.id}">
-<button data-approve="${s.id}">Approve</button>
-<button data-reject="${s.id}" class="red">Reject</button>
-`:esc(s.status)}
+<button class="btn small" onclick="toggleCampaign('${safe(c.id)}','${safe(c.status)}')">${c.status==="active"?"Pause":"Activate"}</button>
+<button class="btn small" onclick="editCampaign('${safe(c.id)}')">Edit</button>
 </td>
-</tr>
-`).join('')||'<tr><td colspan="6">No submissions yet.</td></tr>'}
-</table>
-</div>
+</tr>`).join("")||'<tr><td colspan="5">No campaigns.</td></tr>';
 
-<h2>Registered creators</h2>
+let {data:ss,error:se}=await sb.from("submissions")
+.select("*,campaigns(title),profiles(email,username)")
+.order("created_at",{ascending:false}).limit(100);
 
-<div class="box sc">
-<table>
-<tr><th>Username</th><th>Email</th><th>Role</th><th>Joined</th></tr>
-${(users||[]).map(u=>`
-<tr>
-<td>${esc(u.username||u.full_name||'—')}</td>
-<td>${esc(u.email)}</td>
-<td>${esc(u.role)}</td>
-<td>${new Date(u.created_at).toLocaleDateString()}</td>
-</tr>
-`).join('')}
-</table>
-</div>
+$("#adminSubmissionRows").innerHTML=se
+?`<tr><td colspan="6">${safe(se.message)}</td></tr>`
+:(ss||[]).map(s=>`<tr>
+<td>${safe(s.profiles?.username||s.profiles?.email||s.user_id)}</td>
+<td>${safe(s.campaigns?.title||"—")}</td>
+<td>${Number(s.claimed_views||0).toLocaleString()}</td>
+<td>${s.proof_path?`<button class="btn small" onclick="showProof('${safe(s.proof_path)}')">View</button>`:"—"}</td>
+<td><span class="status ${safe(s.status)}">${safe(s.status)}</span></td>
+<td>
+<button class="btn small" onclick="reviewSubmission('${safe(s.id)}','approved')">Approve</button>
+<button class="btn small danger" onclick="reviewSubmission('${safe(s.id)}','rejected')">Reject</button>
+<button class="btn small" onclick="reviewSubmission('${safe(s.id)}','paid')">Paid</button>
+</td>
+</tr>`).join("")||'<tr><td colspan="6">No submissions.</td></tr>';
+}
 
-<h2>Wallet records</h2>
-
-<div class="box sc">
-<table>
-<tr><th>Creator</th><th>Network</th><th>Address</th></tr>
-${(wallets||[]).map(w=>`
-<tr>
-<td>${esc(w.profiles?.username||w.profiles?.email||w.user_id)}</td>
-<td>${esc(w.network)}</td>
-<td style="overflow-wrap:anywhere">${esc(w.address)}</td>
-</tr>
-`).join('')||'<tr><td colspan="3">No wallets.</td></tr>'}
-</table>
-</div>
-
-<h2>Support requests</h2>
-
-<div class="grid">
-${(reqs||[]).map(r=>`
-<div class="card">
-<div class="top">
-<b>${esc(r.subject)}</b>
-<span class="badge">${esc(r.status)}</span>
-</div>
-<p>${esc(r.message)}</p>
-
-<label>Admin response</label>
-<textarea id="reply-${r.id}">${esc(r.admin_reply||'')}</textarea>
-
-<select id="rstatus-${r.id}">
-<option value="open">Open</option>
-<option value="in_progress">In progress</option>
-<option value="resolved">Resolved</option>
-</select>
-
-<button data-reply="${r.id}" class="btn g">Save response</button>
-</div>
-`).join('')||'<p class="mut">No support requests.</p>'}
-</div>
-`;
-
-$('#createcampaign').onclick=async()=>{
-const title=$('#ctitle').value.trim();
-const description=$('#cdesc').value.trim();
-const cpm=Number($('#ccpm').value);
-const budget=Number($('#cbudget').value);
-const max_payout=Number($('#cmax').value);
-
-if(!title||!description)return say('Enter a title and description');
-
-if(cpm<=0||budget<=0||max_payout<=0)return say('Enter valid campaign amounts');
-
-const split=s=>s.split('|').map(x=>x.trim()).filter(Boolean);
-
-const{error}=await sb.from('campaigns').insert({
-title,
-description,
-cpm,
-budget,
-max_payout,
-duration:$('#cduration').value.trim(),
-platforms:$('#cplatforms').value.split(',').map(x=>x.trim()).filter(Boolean),
-requirements:split($('#crequirements').value),
-x_account:$('#cx').value.trim(),
-tiktok_account:$('#ctiktok').value.trim(),
-drive_link:$('#cdrive').value.trim(),
-rules:split($('#crules').value),
-min_views:Number($('#cminviews').value||0),
-mission:$('#cmission').value.trim(),
-status:'active'
-});
-
-if(error)return say(error.message);
-
-say('Campaign created!');
-admin();
+window.toggleCampaign=async(id,status)=>{
+let next=status==="active"?"paused":"active";
+let {error}=await sb.from("campaigns").update({status:next}).eq("id",id);
+toast(error?.message||"Campaign updated.");
+loadAdmin();
+loadCampaigns();
 };
 
-document.querySelectorAll('[data-update-campaign]').forEach(b=>{
-b.onclick=async()=>{
-const id=b.dataset.updateCampaign;
-const status=document.querySelector(`[data-cstatus="${id}"]`).value;
-
-const{error}=await sb.from('campaigns')
-.update({status}).eq('id',id);
-
-if(error)return say(error.message);
-
-say('Campaign updated!');
-admin();
+window.editCampaign=id=>{
+let c=campaignsCache.find(x=>x.id===id);
+if(!c){toast("Refresh campaigns and try again.");return;}
+openCampaignForm(c);
 };
-});
 
-document.querySelectorAll('[data-approve]').forEach(b=>{
-b.onclick=async()=>{
-const id=b.dataset.approve;
-const views=Number($('#views-'+id).value);
-
-if(!Number.isFinite(views)||views<0)return say('Enter valid verified views');
-
-const sub=subs.find(x=>x.id===id);
-const earnings=earn(views,sub.campaigns);
-
-const{error}=await sb.from('submissions').update({
-verified_views:views,
-earnings,
-status:'approved',
-reviewed_at:new Date().toISOString()
-}).eq('id',id);
-
-if(error)return say(error.message);
-
-say('Submission approved!');
-admin();
+window.reviewSubmission=async(id,status)=>{
+let {error}=await sb.from("submissions")
+.update({status,reviewed_at:new Date().toISOString()}).eq("id",id);
+toast(error?.message||"Submission updated.");
+loadAdmin();
 };
-});
 
-document.querySelectorAll('[data-reject]').forEach(b=>{
-b.onclick=async()=>{
-if(!confirm('Reject this submission?'))return;
-
-const{error}=await sb.from('submissions').update({
-status:'rejected',
-reviewed_at:new Date().toISOString()
-}).eq('id',b.dataset.reject);
-
-if(error)return say(error.message);
-
-say('Submission rejected!');
-admin();
+window.showProof=async path=>{
+let {data,error}=await sb.storage.from("proofs").createSignedUrl(path,300);
+if(error){toast(error.message);return;}
+window.open(data.signedUrl,"_blank","noopener");
 };
-});
 
-document.querySelectorAll('[data-proof]').forEach(b=>{
-b.onclick=async()=>{
-const{data,error}=await sb.storage.from('proofs')
-.createSignedUrl(b.dataset.proof,300);
+$("#createCampaignBtn").onclick=()=>openCampaignForm();
 
-if(error)return say(error.message);
-
-window.open(data.signedUrl,'_blank','noopener');
+function openCampaignForm(c={}){
+modal(c.id?"Edit campaign":"Create campaign",`
+<form id="campaignForm">
+<div class="field"><label>Campaign title</label>
+<input name="title" required value="${safe(c.title||"")}"></div>
+<div class="field"><label>Description</label>
+<textarea name="description">${safe(c.description||"")}</textarea></div>
+<div class="form-grid">
+<div class="field"><label>CPM</label>
+<input name="cpm" type="number" min="0" value="${safe(c.cpm||0)}"></div>
+<div class="field"><label>Budget</label>
+<input name="budget" type="number" min="0" value="${safe(c.budget||0)}"></div>
+<div class="field"><label>Maximum payout</label>
+<input name="max_payout" type="number" min="0" value="${safe(c.max_payout||0)}"></div>
+<div class="field"><label>Minimum views</label>
+<input name="min_views" type="number" min="0" value="${safe(c.min_views||0)}"></div>
+</div>
+<div class="field"><label>Platforms (comma separated)</label>
+<input name="platforms" value="${safe(Array.isArray(c.platforms)?c.platforms.join(", "):c.platforms||"TikTok, X")}"></div>
+<div class="field"><label>Requirements</label>
+<textarea name="requirements">${safe(c.requirements||c.rules||"")}</textarea></div>
+<button class="btn primary" style="width:100%">Save campaign</button>
+</form>
+`);
+$("#campaignForm").onsubmit=async e=>{
+e.preventDefault();
+let f=new FormData(e.currentTarget);
+let row={
+title:f.get("title"),
+description:f.get("description"),
+cpm:Number(f.get("cpm")),
+budget:Number(f.get("budget")),
+max_payout:Number(f.get("max_payout")),
+min_views:Number(f.get("min_views")),
+platforms:f.get("platforms").split(",").map(x=>x.trim()).filter(Boolean),
+requirements:f.get("requirements"),
+status:c.id?(c.status||"active"):"active"
 };
-});
-
-document.querySelectorAll('[data-reply]').forEach(b=>{
-b.onclick=async()=>{
-const id=b.dataset.reply;
-const reply=$('#reply-'+id).value.trim();
-const status=$('#rstatus-'+id).value;
-
-const{error}=await sb.from('user_requests').update({
-admin_reply:reply,
-status
-}).eq('id',id);
-
-if(error)return say(error.message);
-
-say('Support response saved!');
-admin();
+let res=c.id
+?await sb.from("campaigns").update(row).eq("id",c.id)
+:await sb.from("campaigns").insert(row);
+toast(res.error?.message||"Campaign saved.");
+if(!res.error){
+$("#modalBackdrop").classList.remove("show");
+loadCampaigns();
+loadAdmin();
+}
 };
+}
+
+async function syncUserUI(){
+let name=currentProfile?.full_name||currentProfile?.username||
+currentUser?.email?.split("@")[0]||"Guest creator";
+$("#sideName").textContent=name;
+$("#sideEmail").textContent=currentUser?.email||"Sign in to continue";
+$("#sideAvatar").textContent=name[0]?.toUpperCase()||"G";
+$("#authBtn").textContent=currentUser?"Sign out":"Sign in";
+$("#adminNav").classList.toggle("hidden",!isAdmin());
+$("#statProfile").textContent=currentUser?"Active":"Guest";
+$("#statProfileSub").textContent=currentUser?"Account connected":"Sign in to unlock features";
+if(currentUser)loadStats();
+}
+
+async function loadProfile(){
+if(!currentUser)return;
+let {data}=await sb.from("profiles").select("*")
+.eq("id",currentUser.id).maybeSingle();
+currentProfile=data||{
+id:currentUser.id,
+email:currentUser.email,
+role:"creator"
+};
+syncUserUI();
+}
+
+async function authAction(type){
+let email=$("#authEmail").value.trim();
+let password=$("#authPassword").value;
+if(!email||!password){
+toast("Enter email and password.");
+return;
+}
+let res=type==="signup"
+?await sb.auth.signUp({email,password})
+:await sb.auth.signInWithPassword({email,password});
+if(res.error){toast(res.error.message);return;}
+if(type==="signup"&&!res.data.session){
+toast("Account created. Check your email to confirm, then sign in.");
+return;
+}
+currentUser=res.data.user;
+closeAuth();
+await loadProfile();
+await loadCampaigns();
+toast(type==="signup"?"Welcome to Lumex!":"Signed in successfully.");
+}
+
+$("#authForm").onsubmit=e=>{
+e.preventDefault();
+authAction("signin");
+};
+$("#signupBtn").onclick=()=>authAction("signup");
+
+$("#googleBtn").onclick=async()=>{
+let {error}=await sb.auth.signInWithOAuth({
+provider:"google",
+options:{redirectTo:location.origin+location.pathname}
+});
+if(error)toast(error.message);
+};
+
+$("#xBtn").onclick=async()=>{
+let {error}=await sb.auth.signInWithOAuth({
+provider:"x",
+options:{redirectTo:location.origin+location.pathname}
+});
+if(error)toast(error.message);
+};
+
+$("#authBtn").addEventListener("click",async()=>{
+if(currentUser){
+await sb.auth.signOut();
+currentUser=null;
+currentProfile=null;
+syncUserUI();
+toast("Signed out.");
+}else openAuth();
+});
+
+$("#refreshCampaigns").onclick=loadCampaigns;
+
+async function init(){
+if(!sb){
+toast("Supabase did not load. Check your connection.");
+return;
+}
+let {data:{session}}=await sb.auth.getSession();
+currentUser=session?.user||null;
+if(currentUser)await loadProfile();
+else syncUserUI();
+await loadCampaigns();
+if(currentUser)loadStats();
+sb.auth.onAuthStateChange(async(_event,session)=>{
+currentUser=session?.user||null;
+if(currentUser)await loadProfile();
+else{
+currentProfile=null;
+syncUserUI();
+}
 });
 }
 
-/* ROUTING */
-
-async function route(){
-const hash=location.hash||'#/';
-
-if(hash==='#/'||hash==='#'){
-return home();
-}
-
-if(hash==='#/campaigns')return campaigns();
-if(hash==='#/auth')return auth();
-if(hash==='#/dash')return dash();
-if(hash==='#/submit')return submit();
-if(hash==='#/profile')return profile();
-if(hash==='#/notifications')return notifications();
-if(hash==='#/wallet')return wallet();
-if(hash==='#/requests')return requests();
-if(hash==='#/admin')return admin();
-
-if(hash.startsWith('#/c/')){
-return camp(hash.slice(4));
-}
-
-app.innerHTML='<h2>Page not found</h2><a class="gr" href="#/">Return home</a>';
-}
-
-/* SESSION AND NAVIGATION */
-
-async function load(){
-const{data}=await sb.auth.getSession();
-
-me=data.session?.user||null;
-
-if(me){
-const{data:p}=await sb.from('profiles')
-.select('*').eq('id',me.id).maybeSingle();
-
-prof=p||null;
-}else{
-prof=null;
-}
-
-nav();
-await route();
-}
-
-window.addEventListener('hashchange',()=>{
-load();
-});
-
-sb.auth.onAuthStateChange((event,session)=>{
-if(event==='SIGNED_OUT'){
-me=null;
-prof=null;
-nav();
-location.hash='#/';
-}else if(event==='SIGNED_IN'){
-me=session.user;
-setTimeout(load,0);
-}
-});
-
-/* CINEMATIC INTRO */
-
+// Intro and animated glass-card effects
 (function(){
-const intro=$('#lx-intro');
-const skip=$('#lx-skip');
-const canvas=$('#lx-canvas');
-
-if(!intro)return;
-
-let closed=false;
-
-function closeIntro(){
-if(closed)return;
-closed=true;
-intro.classList.add('lx-out');
-
-setTimeout(()=>{
-intro.remove();
-},900);
+const intro=document.getElementById('lumexIntro');
+if(intro){
+const removeIntro=()=>{if(intro.isConnected)intro.remove();};
+window.setTimeout(removeIntro,2250);
+intro.addEventListener('click',removeIntro,{once:true});
 }
-
-skip.onclick=closeIntro;
-
-const timer=setTimeout(closeIntro,4200);
-
-skip.addEventListener('click',()=>clearTimeout(timer));
-
-/* PARTICLE ANIMATION */
-
-const ctx=canvas.getContext('2d');
-
-let width=0,height=0,particles=[];
-
-function resize(){
-width=canvas.width=window.innerWidth;
-height=canvas.height=window.innerHeight;
-
-const count=Math.min(90,Math.floor(width*height/13000));
-
-particles=Array.from({length:count},()=>({
-x:Math.random()*width,
-y:Math.random()*height,
-r:Math.random()*1.8+.4,
-vx:(Math.random()-.5)*.35,
-vy:(Math.random()-.5)*.35,
-a:Math.random()*.65+.15
-}));
-}
-
-function draw(){
-if(closed)return;
-
-ctx.clearRect(0,0,width,height);
-
-particles.forEach(p=>{
-p.x+=p.vx;
-p.y+=p.vy;
-
-if(p.x<0)p.x=width;
-if(p.x>width)p.x=0;
-if(p.y<0)p.y=height;
-if(p.y>height)p.y=0;
-
-ctx.beginPath();
-ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-ctx.fillStyle=`rgba(34,229,139,${p.a})`;
-ctx.fill();
+const decorate=root=>{
+const nodes=root.querySelectorAll('.stat,.campaign,.card,.hero,.auth-box');
+nodes.forEach((el,index)=>{
+if(el.dataset.motionReady)return;
+el.dataset.motionReady='1';
+el.classList.add('reveal-item');
+el.style.setProperty('--reveal-delay',Math.min(index%6,5)*65+'ms');
 });
-
-requestAnimationFrame(draw);
+};
+decorate(document);
+const observer=new MutationObserver(records=>{
+for(const record of records){
+for(const node of record.addedNodes){
+if(node.nodeType===1){
+if(node.matches?.('.stat,.campaign,.card,.hero,.auth-box'))
+decorate(node.parentElement||document);
+else decorate(node);
 }
-
-resize();
-draw();
-
-window.addEventListener('resize',resize);
+}
+}
+});
+observer.observe(document.body,{childList:true,subtree:true});
 })();
 
-/* START */
-
-load();
+init();
 </script>
-
 </body>
 </html>
