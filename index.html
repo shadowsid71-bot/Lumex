@@ -147,7 +147,7 @@ const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let currentUser = null, currentProfile = null, campaignsCache = [], submissionsCache = [];
-const money = n => "₦" + Number(n||0).toLocaleString("en-NG",{maximumFractionDigits:2});
+const money = n => "$" + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const safe = v => String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const toast = msg => {let el=document.createElement("div");el.className="toast";el.textContent=msg;document.body.append(el);setTimeout(()=>el.remove(),3600)};
 const dateText = d => d ? new Date(d).toLocaleDateString() : "—";
@@ -524,7 +524,698 @@ else decorate(node);
 });
 observer.observe(document.body,{childList:true,subtree:true});
 })();
+  
+/* =====================================================
+   LUMEX FEATURE UPDATE
+   Currency UI, campaign joining, verified submissions,
+   campaign budgets, admin reviews and notifications.
+===================================================== */
 
+/* PREMIUM CAMPAIGN BUDGET ANIMATION */
+const lumexExtraStyle = document.createElement("style");
+lumexExtraStyle.textContent = `
+.budget-block{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid var(--line)
+}
+.budget-labels{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:10px;
+  color:var(--muted);
+  margin-bottom:7px
+}
+.budget-labels b{color:#eafff1}
+.budget-track{
+  height:8px;
+  border-radius:30px;
+  background:#ffffff12;
+  overflow:hidden
+}
+.budget-track span{
+  display:block;
+  height:100%;
+  border-radius:30px;
+  background:linear-gradient(90deg,#35d879,#baffcf,#35d879);
+  background-size:200% 100%;
+  box-shadow:0 0 13px #35d87966;
+  transition:width 1s cubic-bezier(.16,1,.3,1);
+  animation:shimmer 2.4s linear infinite
+}
+.admin-extra{margin-top:16px}
+.admin-extra h3{margin:0 0 13px}
+.admin-extra code{
+  color:#baffcf;
+  overflow-wrap:anywhere;
+  white-space:normal
+}
+`;
+document.head.appendChild(lumexExtraStyle);
+
+/* UPDATE CURRENCY LABELS */
+$("#page-home .stat:nth-child(3) .stat-icon").textContent = "$";
+$("#statEarnings").textContent = "$0.00";
+$("#walletEarned").textContent = "$0.00";
+$("#page-wallet .stats .stat:nth-child(2) strong").textContent = "$10.00";
+$("#page-wallet .stats .stat:nth-child(2) small").textContent =
+  "Minimum balance required before requesting a withdrawal";
+
+/* REMOVE OLD SUPPORT WARNING */
+const oldSupportWarning = [
+  ...document.querySelectorAll("#page-support .notice")
+].find(el => el.textContent.includes("user_requests table"));
+
+if (oldSupportWarning) oldSupportWarning.remove();
+
+/* CAMPAIGN BUDGET DATA */
+let campaignBudgetUsage = Object.create(null);
+
+/* CAMPAIGN CARD WITH BUDGET PROGRESS */
+campaignCard = function(c) {
+  const status = (c.status || "active").toLowerCase();
+  const budget = Math.max(0, Number(c.budget || 0));
+  const spent = Math.max(
+    0,
+    Number(campaignBudgetUsage[c.id] || 0)
+  );
+
+  const remaining = Math.max(0, budget - spent);
+  const percentage = budget
+    ? Math.min(100, spent / budget * 100)
+    : 0;
+
+  return `
+    <article class="card campaign">
+      <div class="campaign-top">
+        <span class="tag">
+          ${safe((c.platforms || ["Multi-platform"])
+            .toString().replaceAll(",", " · "))}
+        </span>
+        <span class="status ${safe(status)}">
+          ${safe(status)}
+        </span>
+      </div>
+
+      <h4>${safe(c.title)}</h4>
+
+      <p>
+        ${safe(c.description || c.mission ||
+          "Create engaging clips and earn from verified performance.")}
+      </p>
+
+      <div class="campaign-meta">
+        <div>CPM<b>${money(c.cpm)}</b></div>
+        <div>Budget<b>${money(budget)}</b></div>
+        <div>Max payout<b>${money(c.max_payout)}</b></div>
+      </div>
+
+      <div class="budget-block">
+        <div class="budget-labels">
+          <span>Used: <b>${money(spent)}</b></span>
+          <span>Left: <b>${money(remaining)}</b></span>
+        </div>
+
+        <div class="budget-track">
+          <span style="width:${percentage.toFixed(1)}%"></span>
+        </div>
+      </div>
+
+      <button
+        class="btn primary small"
+        style="width:100%;margin-top:15px"
+        onclick="viewCampaign('${safe(c.id)}')">
+        View campaign →
+      </button>
+    </article>
+  `;
+};
+
+/* LOAD CAMPAIGNS AND BUDGET USAGE */
+loadCampaigns = async function() {
+  const box = $("#campaignGrid");
+  const featured = $("#featuredCampaigns");
+
+  box.innerHTML = emptyHTML("Loading campaigns…", "Please wait.");
+
+  const {data, error} = await fetchCampaigns();
+
+  if (error) {
+    box.innerHTML = emptyHTML(
+      "Could not load campaigns",
+      error.message
+    );
+    featured.innerHTML = box.innerHTML;
+    return;
+  }
+
+  campaignsCache = data || [];
+  campaignBudgetUsage = Object.create(null);
+
+  try {
+    const usage = await sb.rpc("get_campaign_budget_usage");
+
+    if (!usage.error) {
+      (usage.data || []).forEach(item => {
+        campaignBudgetUsage[item.campaign_id] =
+          Number(item.spent || 0);
+      });
+    }
+  } catch (error) {
+    console.warn("Campaign budget usage unavailable:", error);
+  }
+
+  const open = campaignsCache.filter(
+    c => (c.status || "active") === "active"
+  );
+
+  box.innerHTML = open.length
+    ? open.map(campaignCard).join("")
+    : emptyHTML("No active campaigns", "Check back soon.");
+
+  featured.innerHTML = open.length
+    ? open.slice(0, 3).map(campaignCard).join("")
+    : emptyHTML("No featured campaigns", "New opportunities will appear here.");
+
+  $("#statCampaigns").textContent = open.length;
+
+  const select = $("#leaderCampaign");
+
+  select.innerHTML =
+    '<option value="">Select campaign</option>' +
+    campaignsCache.map(c =>
+      `<option value="${safe(c.id)}">${safe(c.title)}</option>`
+    ).join("");
+};
+
+/* FIX CAMPAIGN JOINING */
+window.joinCampaign = async function(id) {
+  if (!requireAuth()) return;
+
+  const existing = await sb
+    .from("campaign_members")
+    .select("campaign_id")
+    .eq("user_id", currentUser.id)
+    .eq("campaign_id", id)
+    .maybeSingle();
+
+  if (existing.error) {
+    toast("Could not check membership: " + existing.error.message);
+    return;
+  }
+
+  if (existing.data) {
+    toast("You have already joined this campaign.");
+    $("#modalBackdrop").classList.remove("show");
+    return;
+  }
+
+  const result = await sb
+    .from("campaign_members")
+    .insert({
+      user_id: currentUser.id,
+      campaign_id: id
+    });
+
+  if (result.error) {
+    toast("Could not join campaign: " + result.error.message);
+    return;
+  }
+
+  $("#modalBackdrop").classList.remove("show");
+  toast("Campaign joined successfully.");
+};
+
+/* ONLY ALLOW JOINED CAMPAIGNS AND VERIFIED ACCOUNTS */
+openSubmission = async function(campaignId = "") {
+  if (!requireAuth()) return;
+
+  const [members, accounts] = await Promise.all([
+    sb.from("campaign_members")
+      .select("campaign_id")
+      .eq("user_id", currentUser.id),
+
+    sb.from("social_accounts")
+      .select("id,platform,username,status")
+      .eq("user_id", currentUser.id)
+      .eq("status", "verified")
+  ]);
+
+  if (members.error) {
+    toast("Could not check joined campaigns: " + members.error.message);
+    return;
+  }
+
+  if (accounts.error) {
+    toast("Could not load verified accounts: " + accounts.error.message);
+    return;
+  }
+
+  const joined = new Set(
+    (members.data || []).map(item => item.campaign_id)
+  );
+
+  const available = campaignsCache.filter(c =>
+    joined.has(c.id) && (c.status || "active") === "active"
+  );
+
+  const verified = accounts.data || [];
+
+  if (!available.length) {
+    toast("Join an active campaign before submitting a clip.");
+    go("campaigns");
+    return;
+  }
+
+  if (!verified.length) {
+    modal(
+      "Verified social account required",
+      `
+      <p class="muted">
+        Add a social profile and wait for admin approval
+        before submitting clips.
+      </p>
+      <button class="btn primary"
+        style="width:100%"
+        onclick="document.getElementById('modalBackdrop').classList.remove('show');go('social')">
+        Go to social accounts
+      </button>
+      `
+    );
+    return;
+  }
+
+  const campaignOptions = available.map(c => `
+    <option value="${safe(c.id)}"
+      ${c.id === campaignId ? "selected" : ""}>
+      ${safe(c.title)}
+    </option>
+  `).join("");
+
+  const accountOptions = verified.map(a => `
+    <option value="${safe(a.id)}">
+      ${safe(a.platform)} · ${safe(a.username)}
+    </option>
+  `).join("");
+
+  modal("Submit a clip", `
+    <form id="submissionForm">
+
+      <div class="field">
+        <label>Joined campaign</label>
+        <select name="campaign_id" required>
+          ${campaignOptions}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Verified social account</label>
+        <select name="account_id" required>
+          ${accountOptions}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Post URL</label>
+        <input name="url" type="url" required
+          placeholder="https://...">
+      </div>
+
+      <div class="field">
+        <label>Claimed views</label>
+        <input name="claimed_views" type="number"
+          min="0" required value="0">
+      </div>
+
+      <div class="field">
+        <label>Screenshot proof (image, max 8 MB)</label>
+        <input name="proof" type="file" accept="image/*">
+      </div>
+
+      <button class="btn primary" style="width:100%">
+        Submit for review
+      </button>
+    </form>
+  `);
+
+  $("#submissionForm").onsubmit = submitClip;
+};
+
+/* VERIFY MEMBERSHIP AGAIN BEFORE SAVING SUBMISSION */
+submitClip = async function(e) {
+  e.preventDefault();
+
+  if (!requireAuth()) return;
+
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+
+  const campaignId = fd.get("campaign_id");
+  const accountId = fd.get("account_id");
+
+  const [membership, account] = await Promise.all([
+    sb.from("campaign_members")
+      .select("campaign_id")
+      .eq("user_id", currentUser.id)
+      .eq("campaign_id", campaignId)
+      .maybeSingle(),
+
+    sb.from("social_accounts")
+      .select("id,platform,username,status")
+      .eq("id", accountId)
+      .eq("user_id", currentUser.id)
+      .eq("status", "verified")
+      .maybeSingle()
+  ]);
+
+  if (membership.error || !membership.data) {
+    toast("Join this campaign before submitting.");
+    return;
+  }
+
+  if (account.error || !account.data) {
+    toast("Select a social account verified by an admin.");
+    return;
+  }
+
+  const proof = form.querySelector('[name="proof"]').files[0];
+  let proofPath = null;
+
+  if (proof) {
+    if (proof.size > 8 * 1024 * 1024) {
+      toast("Image must be 8 MB or smaller.");
+      return;
+    }
+
+    if (!proof.type.startsWith("image/")) {
+      toast("Please upload an image.");
+      return;
+    }
+
+    const path =
+      `${currentUser.id}/${Date.now()}-${proof.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+
+    const upload = await sb.storage
+      .from("proofs")
+      .upload(path, proof, {upsert:false});
+
+    if (upload.error) {
+      toast("Proof upload failed: " + upload.error.message);
+      return;
+    }
+
+    proofPath = path;
+  }
+
+  const row = {
+    user_id: currentUser.id,
+    campaign_id: campaignId,
+    platform: account.data.platform,
+    url: fd.get("url"),
+    username: account.data.username,
+    claimed_views: Number(fd.get("claimed_views")),
+    proof_path: proofPath,
+    status: "pending"
+  };
+
+  const {error} = await sb.from("submissions").insert(row);
+
+  if (error) {
+    toast("Submission failed: " + error.message);
+    return;
+  }
+
+  $("#modalBackdrop").classList.remove("show");
+  toast("Clip submitted successfully.");
+
+  loadSubmissions();
+  loadStats();
+};
+
+/* ADMIN SOCIAL AND WALLET PANELS */
+function ensureAdminExtraPanels() {
+  const page = $("#page-admin");
+
+  if (!page || $("#adminSocialReview")) return;
+
+  page.insertAdjacentHTML("beforeend", `
+    <div class="card admin-extra" id="adminSocialReview">
+      <h3>Social account verification</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Creator ID</th>
+              <th>Platform</th>
+              <th>Username</th>
+              <th>Profile</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminSocialRows">
+            <tr><td colspan="6">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card admin-extra" id="adminWalletReview">
+      <h3>Creator wallet details</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Creator ID</th>
+              <th>Network</th>
+              <th>Wallet address</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody id="adminWalletRows">
+            <tr><td colspan="4">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `);
+}
+
+/* LOAD SOCIAL ACCOUNTS FOR ADMIN */
+async function loadAdminSocialAccounts() {
+  const body = $("#adminSocialRows");
+  if (!body) return;
+
+  const {data,error} = await sb
+    .from("social_accounts")
+    .select("*")
+    .order("created_at", {ascending:false})
+    .limit(200);
+
+  if (error) {
+    body.innerHTML = `
+      <tr><td colspan="6">${safe(error.message)}</td></tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = (data || []).length
+    ? data.map(a => `
+      <tr>
+        <td>${safe(a.user_id)}</td>
+        <td>${safe(a.platform)}</td>
+        <td>${safe(a.username)}</td>
+        <td>
+          ${a.profile_url
+            ? `<a href="${safe(a.profile_url)}"
+                 target="_blank" rel="noopener">Open profile</a>`
+            : "—"}
+        </td>
+        <td>
+          <span class="status ${safe(a.status || "pending")}">
+            ${safe(a.status || "pending")}
+          </span>
+        </td>
+        <td>
+          ${a.status === "verified"
+            ? "Verified"
+            : `
+              <button class="btn small"
+                onclick="reviewSocialAccount('${safe(a.id)}','verified')">
+                Approve
+              </button>
+
+              <button class="btn small danger"
+                onclick="reviewSocialAccount('${safe(a.id)}','rejected')">
+                Reject
+              </button>
+            `}
+        </td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="6">No social accounts submitted.</td></tr>';
+}
+
+/* LOAD CREATOR WALLETS FOR ADMIN */
+async function loadAdminWallets() {
+  const body = $("#adminWalletRows");
+  if (!body) return;
+
+  const {data,error} = await sb
+    .from("wallets")
+    .select("*")
+    .order("updated_at", {ascending:false})
+    .limit(200);
+
+  if (error) {
+    body.innerHTML = `
+      <tr><td colspan="4">${safe(error.message)}</td></tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = (data || []).length
+    ? data.map(w => `
+      <tr>
+        <td>${safe(w.user_id)}</td>
+        <td>${safe(w.network)}</td>
+        <td><code>${safe(w.address)}</code></td>
+        <td>${dateText(w.updated_at || w.created_at)}</td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="4">No wallet details saved.</td></tr>';
+}
+
+/* APPROVE OR REJECT SOCIAL ACCOUNT */
+window.reviewSocialAccount = async function(id, status) {
+  if (!isAdmin()) {
+    toast("Admin access required.");
+    return;
+  }
+
+  const {error} = await sb
+    .from("social_accounts")
+    .update({status})
+    .eq("id", id);
+
+  if (error) {
+    toast("Could not update account: " + error.message);
+    return;
+  }
+
+  toast(
+    status === "verified"
+      ? "Social account approved."
+      : "Social account rejected."
+  );
+
+  loadAdminSocialAccounts();
+};
+
+/* EXTEND EXISTING ADMIN LOADER */
+const originalLoadAdmin = loadAdmin;
+
+loadAdmin = async function() {
+  await originalLoadAdmin();
+
+  if (!isAdmin()) return;
+
+  ensureAdminExtraPanels();
+
+  await Promise.all([
+    loadAdminSocialAccounts(),
+    loadAdminWallets()
+  ]);
+
+  /* Prevent paid submissions from being reversed in the UI */
+  document.querySelectorAll("#adminSubmissionRows tr").forEach(row => {
+    if (row.querySelector(".status.paid")) {
+      row.lastElementChild.innerHTML =
+        '<span class="status paid">Paid is final</span>';
+    }
+  });
+};
+
+/* REAL NOTIFICATION INBOX */
+$("#notificationBtn").onclick = async function() {
+  if (!requireAuth()) return;
+
+  const {data,error} = await sb
+    .from("user_notifications")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", {ascending:false})
+    .limit(50);
+
+  if (error) {
+    toast("Could not load notifications: " + error.message);
+    return;
+  }
+
+  const rows = data || [];
+
+  const html = rows.length
+    ? rows.map(n => `
+      <div style="padding:13px 0;border-bottom:1px solid var(--line)">
+        <b>${safe(n.title || n.event_type || "Notification")}</b>
+        <p class="muted" style="margin:6px 0">
+          ${safe(n.message || "")}
+        </p>
+        <small class="muted">${dateText(n.created_at)}</small>
+      </div>
+    `).join("")
+    : emptyHTML(
+        "You're all caught up",
+        "New account and wallet updates will appear here."
+      );
+
+  modal("Notifications", html);
+};
+
+/* FIX WALLET SAVE ERROR HANDLING */
+$("#saveWallet").onclick = async function() {
+  if (!requireAuth()) return;
+
+  const row = {
+    user_id: currentUser.id,
+    network: $("#walletNetwork").value,
+    address: $("#walletAddress").value.trim(),
+    updated_at: new Date().toISOString()
+  };
+
+  if (!row.address) {
+    toast("Enter a wallet address.");
+    return;
+  }
+
+  const existing = await sb
+    .from("wallets")
+    .select("id")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (existing.error) {
+    toast("Could not check wallet: " + existing.error.message);
+    return;
+  }
+
+  const result = existing.data
+    ? await sb.from("wallets")
+        .update(row)
+        .eq("user_id", currentUser.id)
+    : await sb.from("wallets").insert(row);
+
+  if (result.error) {
+    toast("Wallet was not saved: " + result.error.message);
+    return;
+  }
+
+  toast("Wallet saved successfully.");
+};
+
+/* END LUMEX FEATURE UPDATE */
+  
 init();
 </script>
 </body>
