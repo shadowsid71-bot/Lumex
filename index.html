@@ -253,20 +253,41 @@ $("#leaderRows").innerHTML=error
 };
 
 async function loadRequests(){
-if(!requireAuth())return;
-let {data,error}=await sb.from("user_requests").select("*")
-.eq("user_id",currentUser.id).order("created_at",{ascending:false});
-$("#requestList").innerHTML=error
-?emptyHTML("Requests unavailable",error.message)
-:data?.length
-?data.map(r=>`<div style="padding:12px;border-bottom:1px solid var(--line)">
-<b>${safe(r.subject)}</b>
-<p class="muted">${safe(r.request_type)} · ${safe(r.status||"open")}</p>
-<small class="muted">${dateText(r.created_at)}</small>
-</div>`).join("")
-:emptyHTML("No requests","Your support requests will appear here.");
-}
+  if(!requireAuth())return;
 
+  let {data,error}=await sb.from("user_requests")
+    .select("*")
+    .eq("user_id",currentUser.id)
+    .order("created_at",{ascending:false});
+
+  $("#requestList").innerHTML=error
+    ?emptyHTML("Requests unavailable",error.message)
+    :data?.length
+    ?data.map(r=>`
+      <details style="padding:14px;margin:10px 0;border:1px solid var(--line);border-radius:12px">
+        <summary style="cursor:pointer">
+          <b>${safe(r.subject)}</b>
+          <p class="muted">${safe(r.request_type)} · ${safe(r.status||"open")}</p>
+          <small class="muted">${dateText(r.created_at)}</small>
+        </summary>
+
+        <div style="margin-top:14px">
+          <b>Your message:</b>
+          <p style="white-space:pre-wrap">${safe(r.message)}</p>
+
+          ${r.admin_reply ? `
+            <div style="padding:12px;margin-top:12px;background:var(--panel2);border-radius:10px">
+              <b>Support response</b>
+              <p style="white-space:pre-wrap">${safe(r.admin_reply)}</p>
+            </div>
+          ` : `
+            <p class="muted">Awaiting support response.</p>
+          `}
+        </div>
+      </details>
+    `).join("")
+    :emptyHTML("No requests","Your support requests will appear here.");
+  }
 $("#sendRequest").onclick=async()=>{
 if(!requireAuth())return;
 let row={
