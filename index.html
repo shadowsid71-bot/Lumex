@@ -1216,180 +1216,221 @@ $("#saveWallet").onclick = async function() {
 
 /* END LUMEX FEATURE UPDATE */
 
-  /* =====================================================
-   LUMEX PROFILE AVATAR DISPLAY FIX
-   Shows uploaded profile pictures in sidebar
-   and campaign leaderboard.
-===================================================== */
+/* =================================================
+   LUMEX COMPLETE PROFILE PICTURE FEATURE
+================================================= */
 
-const lumexAvatarStyle = document.createElement("style");
+/* ADD UPLOAD INTERFACE */
+(function(){
 
-lumexAvatarStyle.textContent = `
-#sideAvatar {
-  position:relative;
-  overflow:hidden;
-  flex-shrink:0;
-}
-
-.lumex-avatar-img {
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  border-radius:50%;
-}
-
-.leader-creator {
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.leader-avatar {
-  width:34px;
-  height:34px;
-  min-width:34px;
-  border-radius:50%;
-  background:linear-gradient(135deg,#b5ffd0,#237c4a);
-  color:#062011;
-  display:grid;
-  place-items:center;
-  font-weight:900;
-  position:relative;
-  overflow:hidden;
-}
-`;
-
-document.head.appendChild(lumexAvatarStyle);
-
-/* SAFE AVATAR URL */
-function lumexAvatarURL(url) {
-  if (!url) return "";
-
-  try {
-    const parsed = new URL(url);
-
-    if (!["https:", "http:"].includes(parsed.protocol)) {
-      return "";
-    }
-
-    return parsed.href;
-  } catch {
-    return "";
-  }
-}
-
-/* CREATE AVATAR HTML */
-function lumexAvatarHTML(url, name, size = 34) {
-  const initial = safe((name || "C").charAt(0).toUpperCase());
-  const image = lumexAvatarURL(url);
-
-  return `
-    <div class="leader-avatar"
-      style="width:${size}px;height:${size}px;min-width:${size}px">
-
-      <span>${initial}</span>
-
-      ${
-        image
-          ? `<img class="lumex-avatar-img"
-               src="${safe(image)}"
-               alt="Creator profile picture"
-               onerror="this.remove()">`
-          : ""
-      }
-
-    </div>
-  `;
-}
-
-/* UPDATE SIDEBAR PROFILE PICTURE */
-const originalLumexSyncUserUI = syncUserUI;
-
-syncUserUI = async function() {
-
-  await originalLumexSyncUserUI();
-
-  const name =
-    currentProfile?.full_name ||
-    currentProfile?.username ||
-    currentUser?.email?.split("@")[0] ||
-    "Creator";
-
-  const avatar = document.getElementById("sideAvatar");
-
-  if (avatar) {
-    const image = lumexAvatarURL(currentProfile?.avatar_url);
-
-    avatar.innerHTML = `
-      <span>${safe(name.charAt(0).toUpperCase())}</span>
-
-      ${
-        image
-          ? `<img class="lumex-avatar-img"
-               src="${safe(image)}"
-               alt="Profile picture"
-               onerror="this.remove()">`
-          : ""
-      }
-    `;
-  }
-};
-
-/* LEADERBOARD WITH CREATOR PROFILE PICTURES */
-$("#leaderCampaign").onchange = async function(e) {
-
-  const id = e.target.value;
-
-  if (!id) return;
-
-  const { data, error } = await sb.rpc(
-    "get_campaign_leaderboard",
-    { p_campaign_id: id }
+  const formGrid = document.querySelector(
+    "#page-profile .card .form-grid"
   );
 
-  if (error) {
-    $("#leaderRows").innerHTML =
-      `<tr><td colspan="4">${safe(error.message)}</td></tr>`;
+  if (!formGrid || document.getElementById("lumexPhotoBox")) return;
+
+  const box = document.createElement("div");
+  box.id = "lumexPhotoBox";
+  box.style.cssText = `
+    display:flex;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+    padding:16px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:#ffffff08;
+  `;
+
+  box.innerHTML = `
+    <div style="
+      width:76px;height:76px;border-radius:50%;
+      overflow:hidden;background:#183c29;
+      display:grid;place-items:center;
+      font-size:25px;font-weight:900;
+      position:relative;
+    ">
+      <span id="lumexPhotoInitial">?</span>
+      <img id="lumexPhotoPreview"
+        style="display:none;position:absolute;inset:0;
+        width:100%;height:100%;object-fit:cover;">
+    </div>
+
+    <div style="flex:1;min-width:180px">
+      <b>Profile picture</b>
+      <p class="muted" style="font-size:11px">
+        Upload a picture to represent your creator account.
+      </p>
+
+      <input id="lumexPhotoFile"
+        type="file"
+        accept="image/*"
+        style="display:block;width:100%;margin:10px 0">
+
+      <button id="lumexUploadPhoto"
+        class="btn primary small">
+        Upload profile picture
+      </button>
+    </div>
+  `;
+
+  formGrid.parentElement.insertBefore(box,formGrid);
+
+})();
+
+/* LOAD CURRENT PROFILE PICTURE */
+async function lumexRefreshPhoto(){
+
+  if (!currentUser) return;
+
+  const {data,error} = await sb
+    .from("profiles")
+    .select("avatar_url,full_name,username")
+    .eq("id",currentUser.id)
+    .maybeSingle();
+
+  if(error){
+    console.error("Profile picture load error:",error);
     return;
   }
 
-  $("#leaderRows").innerHTML = (data || [])
-    .map((r, i) => {
+  if(data){
+    currentProfile = {...currentProfile,...data};
+  }
 
-      const name =
-        r.username ||
-        r.full_name ||
-        "Creator";
+  const url = lumexAvatarURL(currentProfile?.avatar_url);
 
-      return `
-        <tr>
-          <td>#${i + 1}</td>
+  const preview = document.getElementById("lumexPhotoPreview");
+  const initial = document.getElementById("lumexPhotoInitial");
 
-          <td>
-            <div class="leader-creator">
+  if(preview && url){
+    preview.src = url;
+    preview.style.display = "block";
+  }
 
-              ${lumexAvatarHTML(r.avatar_url, name, 34)}
+  if(initial){
+    initial.textContent = (
+      currentProfile?.full_name ||
+      currentProfile?.username ||
+      "C"
+    ).charAt(0).toUpperCase();
+  }
 
-              <span>${safe(name)}</span>
+  await syncUserUI();
+}
 
-            </div>
-          </td>
+/* UPLOAD BUTTON */
+document.getElementById("lumexUploadPhoto").onclick =
+async function(){
 
-          <td>
-            ${Number(r.verified_views || 0).toLocaleString()}
-          </td>
+  if(!requireAuth()) return;
 
-          <td>${money(r.earnings)}</td>
-        </tr>
-      `;
+  const input = document.getElementById("lumexPhotoFile");
+  const file = input.files?.[0];
 
-    }).join("") ||
-    '<tr><td colspan="4">No leaderboard entries yet.</td></tr>';
+  if(!file){
+    toast("Choose a profile picture first.");
+    return;
+  }
+
+  if(!file.type.startsWith("image/")){
+    toast("Please choose an image.");
+    return;
+  }
+
+  if(file.size > 5 * 1024 * 1024){
+    toast("Image must be 5 MB or smaller.");
+    return;
+  }
+
+  const button = this;
+  button.disabled = true;
+  button.textContent = "Uploading...";
+
+  try{
+
+    const extension =
+      file.name.split(".").pop().replace(/[^a-zA-Z0-9]/g,"") || "jpg";
+
+    const path =
+      `${currentUser.id}/${Date.now()}.${extension}`;
+
+    const upload = await sb.storage
+      .from("avatars")
+      .upload(path,file,{
+        cacheControl:"3600",
+        upsert:false
+      });
+
+    if(upload.error){
+      throw upload.error;
+    }
+
+    const publicResult = sb.storage
+      .from("avatars")
+      .getPublicUrl(path);
+
+    const publicUrl = publicResult.data.publicUrl;
+
+    const saved = await sb
+      .from("profiles")
+      .update({avatar_url:publicUrl})
+      .eq("id",currentUser.id)
+      .select("id")
+      .maybeSingle();
+
+    if(saved.error) throw saved.error;
+
+    if(!saved.data){
+      throw new Error("Profile record not found.");
+    }
+
+    currentProfile = {
+      ...currentProfile,
+      avatar_url:publicUrl
+    };
+
+    await syncUserUI();
+
+    const preview = document.getElementById("lumexPhotoPreview");
+
+    if(preview){
+      preview.src = publicUrl;
+      preview.style.display = "block";
+    }
+
+    toast("Profile picture uploaded successfully!");
+
+  }catch(error){
+
+    console.error("Avatar upload error:",error);
+
+    toast("Upload failed: " + error.message);
+
+  }finally{
+
+    button.disabled = false;
+    button.textContent = "Upload profile picture";
+
+  }
+
 };
 
-/* END PROFILE AVATAR DISPLAY FIX */
+/* REFRESH PHOTO WHEN PROFILE PAGE OPENS */
+const originalLumexGo = go;
+
+go = function(page){
+
+  originalLumexGo(page);
+
+  if(page === "profile" && currentUser){
+    lumexRefreshPhoto();
+  }
+
+};
+
+/* END COMPLETE PROFILE PICTURE FEATURE */  
   
 init();
 </script>
